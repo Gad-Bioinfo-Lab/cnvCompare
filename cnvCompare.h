@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <map>
-#include <htslib/sam.h>
 
 class cnvCompare
 {
