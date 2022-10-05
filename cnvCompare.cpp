@@ -52,10 +52,43 @@ cnvCompare::cnvCompare(string iF, int nT) {
   this->chromosomeMap.push_back("chrY");
 }
 
+cnvCompare::cnvCompare(string iF, string cF, int nT) {
+  this->inputFile = iF;
+  this->controlFile = cF;
+  this->nbThread = nT;
+  this->chromosomeMap.push_back("chr1");
+  this->chromosomeMap.push_back("chr2");
+  this->chromosomeMap.push_back("chr3");
+  this->chromosomeMap.push_back("chr4");
+  this->chromosomeMap.push_back("chr5");
+  this->chromosomeMap.push_back("chr6");
+  this->chromosomeMap.push_back("chr7");
+  this->chromosomeMap.push_back("chr8");
+  this->chromosomeMap.push_back("chr9");
+  this->chromosomeMap.push_back("chr10");
+  this->chromosomeMap.push_back("chr11");
+  this->chromosomeMap.push_back("chr12");
+  this->chromosomeMap.push_back("chr13");
+  this->chromosomeMap.push_back("chr14");
+  this->chromosomeMap.push_back("chr15");
+  this->chromosomeMap.push_back("chr16");
+  this->chromosomeMap.push_back("chr17");
+  this->chromosomeMap.push_back("chr18");
+  this->chromosomeMap.push_back("chr19");
+  this->chromosomeMap.push_back("chr20");
+  this->chromosomeMap.push_back("chr21");
+  this->chromosomeMap.push_back("chr22");
+  this->chromosomeMap.push_back("chrX");
+  this->chromosomeMap.push_back("chrY");
+}
+
 void cnvCompare::mainLoop() {
   this->getData();
   this->computeCounts();
 }
+
+
+
 
 // Alt loop : store all data for 1 chromosome and perform counts on it
 // need a huge amount of RAM.

@@ -37,14 +37,15 @@ int main(int argc, char* argv[])
 
 
 	string inputFile;
-
+	string inputControlFile;
 	string logFile;
 
 
 	po::options_description desc("Allowed options");
 	desc.add_options()
 	("help,h", "produce help message")
-	("input,i",  po::value<string>( &inputFile ), "Input TSV file(s) containing detected CNV from samples" )
+	("input,i",  po::value<string>( &inputFile ), "List of input TSV file(s) containing detected CNV from samples" )
+	("control,c",  po::value<string>( &inputControlFile ), "List of input TSV file(s) containing detected CNV from control" )
     ("whole,w" , "Whole mode. WARNING : Needs large amount of RAM" );
 
 
@@ -77,7 +78,27 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	cnvCompare * App = new cnvCompare( inputFile , 1 );
+	cnvCompare * App;
+
+	// check provided files
+	if( inputControlFile.length( ) > 0 )
+	{
+		if( !IsFileReadable( inputControlFile ) )
+		{
+			cerr << "File provided as input : " << inputControlFile << " is not accessible : stopping" << endl;
+			return -1;
+		}
+		App = new cnvCompare(inputFile, inputControlFile, 1);
+	}
+	else
+	{
+		App = new cnvCompare(inputFile, 1);
+		cerr << "No file provided as input control file" << endl;
+	}
+
+	
+
+	
 
   if( vm.count( "whole" ) ) {
     App->altLoop();
