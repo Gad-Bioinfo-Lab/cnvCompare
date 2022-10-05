@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 	po::options_description desc("Allowed options");
 	desc.add_options()
 	("help,h", "produce help message")
-	("input,i",  po::value<string>( &inputFile ), "Input BAM file containing aligned read from sample." )
+	("input,i",  po::value<string>( &inputFile ), "Input TSV file(s) containing detected CNV from samples" )
 	("thread,t", po::value<int>( &nbThread )->default_value(50), "Number of thread to use. (NYI)")
   ("whole,w" , "Whole mode. WARNING : Needs large amount of RAM" );
 
