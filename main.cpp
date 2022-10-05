@@ -30,7 +30,6 @@ int main(int argc, char* argv[])
 
 	int currentThread = 0;
 	int depthThreshold;
-	int nbThread = 1;
 	int loggingLevel;
 
 	double ratioThreshold;
@@ -46,20 +45,13 @@ int main(int argc, char* argv[])
 	desc.add_options()
 	("help,h", "produce help message")
 	("input,i",  po::value<string>( &inputFile ), "Input TSV file(s) containing detected CNV from samples" )
-	("thread,t", po::value<int>( &nbThread )->default_value(50), "Number of thread to use. (NYI)")
-  ("whole,w" , "Whole mode. WARNING : Needs large amount of RAM" );
+    ("whole,w" , "Whole mode. WARNING : Needs large amount of RAM" );
 
 
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 	po::notify(vm);
 
-	// Verif que le nb de thread n'est pas négatif ...
-	if( nbThread < 1 )
-	{
-		nbThread = 1;
-		cerr << "You entered a null or negative value for thread number, positionning it to 1. " << endl;
-	}
 
 
 	if( argc <= 1 )
@@ -85,7 +77,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	cnvCompare * App = new cnvCompare( inputFile , nbThread );
+	cnvCompare * App = new cnvCompare( inputFile , 1 );
 
   if( vm.count( "whole" ) ) {
     App->altLoop();
