@@ -18,6 +18,9 @@ class cnvCompare
 		void computeCounts();
 		void computeChrCounts(std::string);
 		short int getNbFile();
+		int fillMap(std::string, std::string); 
+		std::string getControlFile();
+		std::string getInputFile(); 
 
 	private:
 		std::string inputFile;
@@ -28,6 +31,7 @@ class cnvCompare
 		std::vector<std::string> chromosomeMap ;
 		short int nbFile = 0;
 		bool useControls = false; 
+		std::map<std::string, std::string> fileMap; 
 
 };
 #endif
