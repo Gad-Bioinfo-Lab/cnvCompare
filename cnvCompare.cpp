@@ -23,10 +23,11 @@ cnvCompare::cnvCompare() {
   //
 }
 
-cnvCompare::cnvCompare(string iF, int nT) {
+cnvCompare::cnvCompare(string iF, int nT, int s) {
   this->inputFile = iF;
   this->nbThread = nT;
   this->useControls = false;
+  this->filterSize = s;
   int n = this->fillMap(iF, "sample");
   cerr << n << " files added to sample list" << endl; 
   this->chromosomeMap.push_back("chr1");
@@ -55,11 +56,12 @@ cnvCompare::cnvCompare(string iF, int nT) {
   this->chromosomeMap.push_back("chrY");
 }
 
-cnvCompare::cnvCompare(string iF, string cF, int nT) {
+cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
   this->inputFile = iF;
   this->controlFile = cF;
   this->nbThread = nT;
   this->useControls = true;
+  this->filterSize = s;
   int n = this->fillMap(iF, "sample");
   cerr << n << " files added to sample list" << endl; 
   int m = this->fillMap(cF, "control");
@@ -371,6 +373,12 @@ void cnvCompare::getData() {
       long end = string_to_int(s_end);
       unsigned int value = string_to_int(s_value);
 
+      // size filter 
+      if ((end - start) < this->getFilterSize()) {
+        continue;
+      }
+
+
       if (value > 5) {
         value = 5;
       }
@@ -537,6 +545,8 @@ int cnvCompare::fillMap(string incFile, string status) {
 }
 
 
-
+int cnvCompare::getFilterSize() {
+  return this->filterSize;
+}
 
 //
