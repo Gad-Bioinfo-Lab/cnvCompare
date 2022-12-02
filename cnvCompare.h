@@ -8,8 +8,8 @@ class cnvCompare
 {
 	public:
 		cnvCompare();
-		cnvCompare( std::string , int );
-		cnvCompare(std::string , std::string, int);
+		cnvCompare( std::string , int , int);
+		cnvCompare(std::string , std::string, int, int);
 		void mainLoop();
 		void altLoop();
 		void getData();
@@ -21,6 +21,7 @@ class cnvCompare
 		int fillMap(std::string, std::string); 
 		std::string getControlFile();
 		std::string getInputFile(); 
+		int getFilterSize();
 
 	private:
 		std::string inputFile;
@@ -32,6 +33,7 @@ class cnvCompare
 		short int nbFile = 0;
 		bool useControls = false; 
 		std::map<std::string, std::string> fileMap; 
+		int filterSize;
 
 };
 #endif
