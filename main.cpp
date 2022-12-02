@@ -31,6 +31,7 @@ int main(int argc, char* argv[])
 	int currentThread = 0;
 	int depthThreshold;
 	int loggingLevel;
+	int filterSize = 0;
 
 	double ratioThreshold;
 	double pvalueThreshold;
@@ -46,6 +47,7 @@ int main(int argc, char* argv[])
 	("help,h", "produce help message")
 	("input,i",  po::value<string>( &inputFile ), "List of input TSV file(s) containing detected CNV from samples" )
 	("control,c",  po::value<string>( &inputControlFile ), "List of input TSV file(s) containing detected CNV from control" )
+	("filter,f", po::value<int>( &filterSize ), "Minimum size for a CNV to be counted (0)" )
     ("whole,w" , "Whole mode. WARNING : Needs large amount of RAM" );
 
 
@@ -88,11 +90,11 @@ int main(int argc, char* argv[])
 			cerr << "File provided as input : " << inputControlFile << " is not accessible : stopping" << endl;
 			return -1;
 		}
-		App = new cnvCompare(inputFile, inputControlFile, 1);
+		App = new cnvCompare(inputFile, inputControlFile, 1, filterSize);
 	}
 	else
 	{
-		App = new cnvCompare(inputFile, 1);
+		App = new cnvCompare(inputFile, 1, filterSize);
 		cerr << "No file provided as input control file" << endl;
 	}
 
