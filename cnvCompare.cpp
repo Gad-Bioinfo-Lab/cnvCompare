@@ -190,6 +190,11 @@ void cnvCompare::getDataWhole(string incChr) {
       long end = string_to_int(s_end);
       unsigned int value = string_to_int(s_value);
 
+      // size filter 
+      if ((end - start) < this->getFilterSize()) {
+        continue;
+      }
+
       // thresholding the dups
       if (value > 5) {
         value = 5;
