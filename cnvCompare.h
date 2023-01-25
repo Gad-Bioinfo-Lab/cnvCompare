@@ -20,7 +20,8 @@ class cnvCompare
 		short int getNbFile();
 		int fillMap(std::string, std::string); 
 		std::string getControlFile();
-		std::string getInputFile(); 
+		std::string getInputFile();
+		std::string getFormat(); 
 		int getFilterSize();
 		void setFormat(bool, bool);
 

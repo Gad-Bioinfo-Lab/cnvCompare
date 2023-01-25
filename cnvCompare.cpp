@@ -560,3 +560,13 @@ void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice) {
   this->useVCFFormat = incVCFChoice;
   this->useBEDFormat = incBEDChoice;
 }
+
+string cnvCompare::getFormat() {
+  if (this->useVCFFormat) {
+    return "VCF"; 
+  } else {
+    return "BED";
+  }
+
+
+}
