@@ -27,6 +27,8 @@ int main(int argc, char* argv[])
   cerr << "Starting Main" << endl;
 
 	bool countStop = false;
+	bool useVCFFormat = true; 
+	bool useBEDFormat = false;
 
 	int currentThread = 0;
 	int depthThreshold;
@@ -45,10 +47,12 @@ int main(int argc, char* argv[])
 	po::options_description desc("Allowed options");
 	desc.add_options()
 	("help,h", "produce help message")
-	("input,i",  po::value<string>( &inputFile ), "List of input TSV file(s) containing detected CNV from samples" )
-	("control,c",  po::value<string>( &inputControlFile ), "List of input TSV file(s) containing detected CNV from control" )
+	("input,i",  po::value<string>( &inputFile ), "List of input file(s) containing detected CNV from samples" )
+	("control,c",  po::value<string>( &inputControlFile ), "List of input file(s) containing detected CNV from control" )
 	("filter,f", po::value<int>( &filterSize ), "Minimum size for a CNV to be counted (0)" )
-    ("whole,w" , "Whole mode. WARNING : Needs large amount of RAM" );
+    ("whole,w" , "Whole mode. WARNING : Needs large amount of RAM" )
+	("vcf" , "VCF mode : input files are in VCF format according to vcf specification v4.7 (default)")
+	("bed", "BED mode : input files are in bed format + fields for cnv level and quality scores");
 
 
 	po::variables_map vm;
@@ -99,7 +103,16 @@ int main(int argc, char* argv[])
 	}
 
 	
+  if (vm.count("vcf")) {
+	useVCFFormat = true;
+	useBEDFormat = false; 
+  }
+  if (vm.count("bed")) {
+	useVCFFormat = false; 
+	useBEDFormat = true;
+  }
 
+  App->setFormat(useVCFFormat , useBEDFormat);
 	
 
   if( vm.count( "whole" ) ) {

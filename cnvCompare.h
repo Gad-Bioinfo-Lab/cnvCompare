@@ -22,6 +22,7 @@ class cnvCompare
 		std::string getControlFile();
 		std::string getInputFile(); 
 		int getFilterSize();
+		void setFormat(bool, bool);
 
 	private:
 		std::string inputFile;
@@ -34,6 +35,8 @@ class cnvCompare
 		bool useControls = false; 
 		std::map<std::string, std::string> fileMap; 
 		int filterSize;
+		bool useVCFFormat; 
+		bool useBEDFormat;
 
 };
 #endif

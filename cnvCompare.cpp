@@ -555,3 +555,8 @@ int cnvCompare::getFilterSize() {
 }
 
 //
+
+void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice) {
+  this->useVCFFormat = incVCFChoice;
+  this->useBEDFormat = incBEDChoice;
+}
