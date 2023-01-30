@@ -153,42 +153,26 @@ void cnvCompare::getDataWhole(string incChr) {
         continue;
       }
 
-      i = 0;
-      // get information from the line
-      istringstream issLigne(ligneCNV);
-      while (getline(issLigne, mot, '\t')) {
-        switch (i) {
-        case 0:
-          chromosome = mot;
-          break;
-        case 1:
-          s_start = mot;
-          break;
-        case 2:
-          s_end = mot;
-          break;
-        case 3:
-          s_type = mot;
-          break;
-        case 4:
-          s_value = mot;
-          break;
-        default:
-          break;
-        }
-        i++;
+      vector<string> res;
+      if (this->getFormat() == "BED") {
+         res = this->parseBEDLine(ligneCNV);
+      } else {
+        res = this->parseVCFLine(ligneCNV);
       }
 
+
+      // type conversion
+      chromosome = res[0];
+      
       // Pass the line if not the asked chromosome
       if (chromosome != incChr) {
         continue;
       }
       nbLigneFile++;
-
-      // type conversion
-      long start = string_to_int(s_start);
-      long end = string_to_int(s_end);
-      unsigned int value = string_to_int(s_value);
+      s_type = res[3];
+      long start = string_to_int(res[1]);
+      long end = string_to_int(res[2]);
+      unsigned int value = string_to_int(res[4]);
 
       // size filter 
       if ((end - start) < this->getFilterSize()) {
@@ -229,7 +213,6 @@ void cnvCompare::computeChrCounts(string incChr) {
   string s_value;
 
   // tsv parsing
-  // tsv parsing
   map <string, string>::iterator myIterA;
   for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++) {
     ligne = myIterA->first;
@@ -254,46 +237,34 @@ void cnvCompare::computeChrCounts(string incChr) {
     while (getline(cnvStream, ligneCNV)) {
       // need to deal with header "#"
       if (ligneCNV.find(header) == 0) {
+        if ((this->getFormat() == "VCF") && (incChr == "chr1")) {
+          outStream << ligneCNV; 
+        }
         continue;
       }
-      i = 0;
-      // get information from the line
-      istringstream issLigne(ligneCNV);
-      while (getline(issLigne, mot, '\t')) {
-        switch (i) {
-        case 0:
-          chromosome = mot;
-          break;
-        case 1:
-          s_start = mot;
-          break;
-        case 2:
-          s_end = mot;
-          break;
-        case 3:
-          s_type = mot;
-          break;
-        case 4:
-          s_value = mot;
-          break;
-        default:
-          break;
-        }
-        i++;
+      vector<string> res;
+      if (this->getFormat() == "BED") {
+         res = this->parseBEDLine(ligneCNV);
+      } else {
+        res = this->parseVCFLine(ligneCNV);
       }
 
+
+      // type conversion
+      chromosome = res[0];
+      s_type = res[3];
+      long start = string_to_int(res[1]);
+      long end = string_to_int(res[2]);
+      unsigned int value = string_to_int(res[4]);
+      if (value > 5) {
+        value = 5;
+      }
       // skip if not the good chr
       if (chromosome != incChr) {
         continue;
       }
 
-      // type conversion
-      long start = string_to_int(s_start);
-      long end = string_to_int(s_end);
-      unsigned int value = string_to_int(s_value);
-      if (value > 5) {
-        value = 5;
-      }
+
       // counts
       vector<double> m;
       for (long i = start; i <= end; i++) {
@@ -305,18 +276,161 @@ void cnvCompare::computeChrCounts(string incChr) {
       }
 
       double mean = moyenne_calculator(m);
-      outStream << chromosome << "\t" << start << "\t" << end << "\t";
-      if (value > 2) {
-        outStream << "DUP\t";
+     // need to adapt the output according to the choosen format
+      if (this->getFormat() == "BED") {
+        outStream << chromosome << "\t" << start << "\t" << end << "\t";
+        if (value > 2) {
+          outStream << "DUP\t";
+        } else {
+          outStream << "DEL\t";
+        }
+        outStream << value << "\t" << mean << "/" << this->getNbFile() << endl;
       } else {
-        outStream << "DEL\t";
+        // output VCF 
+        res = this->parseVCFLine(ligneCNV);
+        istringstream issLigne(ligneCNV);
+        istringstream issInfo;
+        string mot; 
+        string info; 
+        string infomot;
+        string svtype; 
+        string ciend; 
+        string value; 
+        
+        while (getline(issLigne, mot, '\t')) {
+          switch (i) {
+          case 0:
+            outStream << mot; 
+            break;
+          case 7:
+            outStream << "\t";
+            info = mot; 
+            issInfo.str(info);
+            while (getline(issInfo, infomot , ';')) {
+              if (infomot.find("SVTYPE=")) {
+                svtype = parseOnSep(infomot, "=")[1];
+                continue;
+              }
+              if (infomot.find("CIEND=")) {
+                ciend = parseOnSep(infomot, "=")[1];
+                continue;
+              }
+              if (infomot.find("VALUE=")) {
+                value = parseOnSep(infomot, "=")[1];
+                continue;
+              }
+              outStream << infomot << ";";
+            }
+            outStream << "CIEND=" << ciend << ";VALUE=" << value << ";SVTYPE="; 
+            if (string_to_int(value) > 2) {
+              outStream << "DUP;"; 
+            } else {
+              outStream << "DEL;";
+            }
+            outStream << "COUNT=" << mean << "/" << this->getNbFile();
+            break;
+          default:
+            outStream << "\t" << mot;
+            break;
+          }
+          i++;
+        }
+        outStream << endl; 
       }
-      outStream << value << "\t" << mean << "/" << this->getNbFile() << endl;
     }
 
     outStream.close();
   }
 }
+
+
+// output a vector containing : chr start end type value from a BED line
+vector<string> cnvCompare::parseBEDLine(string incLine) {
+  vector<string> output;
+  string mot;
+  short int i = 0;
+      
+  // get information from the line
+  istringstream issLigne(incLine);
+  while (getline(issLigne, mot, '\t')) {
+    switch (i) {
+    case 0:
+      output.push_back(mot);
+      break;
+    case 1:
+      output.push_back(mot);
+      break;
+    case 2:
+      output.push_back(mot);
+      break;
+    case 3:
+      output.push_back(mot);
+      break;
+    case 4:
+      output.push_back(mot);
+      break;
+    default:
+      break;
+    }
+    i++;
+  }
+  return output; 
+}
+
+
+// output a vector containing : chr start end type value from a VCF line
+vector<string> cnvCompare::parseVCFLine(string incLine) {
+  vector<string> output;
+  map<string, string> temp; 
+  string mot;
+  string infomot; 
+  string info; 
+  short int i = 0;
+  istringstream issInfo;
+  temp["SVTYPE"] = "NONE";
+
+  // get information from the line
+  istringstream issLigne(incLine);
+  while (getline(issLigne, mot, '\t')) {
+    switch (i) {
+    case 0:
+      output.push_back(mot);
+      break;
+    case 1:
+      output.push_back(mot);
+      break;
+    case 7:
+      info = mot; 
+      issInfo.str(info);
+      while (getline(issInfo, infomot , ';')) {
+        if (infomot.find("SVTYPE=")) {
+          temp["SVTYPE"] = parseOnSep(infomot, "=")[1];
+        }
+        if (infomot.find("CIEND=")) {
+          temp["CIEND"] = parseOnSep(infomot, "=")[1];
+        }
+        if (infomot.find("VALUE=")) {
+          temp["VALUE"] = parseOnSep(infomot, "=")[1];
+        }
+      }
+      break;
+    default:
+      break;
+    }
+    i++;
+  }
+
+  // add data to the vector from the temp map 
+  output.push_back(temp["CIEND"]);
+  output.push_back(temp["SVTYPE"]);
+  output.push_back(temp["VALUE"]);
+
+  return output; 
+}
+
+
+
+
 
 void cnvCompare::getData() {
   cerr << "Gathering data" << endl;
@@ -347,36 +461,20 @@ void cnvCompare::getData() {
         continue;
       }
       nbLigneFile++;
-      i = 0;
-      // get information from the line
-      istringstream issLigne(ligneCNV);
-      while (getline(issLigne, mot, '\t')) {
-        switch (i) {
-        case 0:
-          chromosome = mot;
-          break;
-        case 1:
-          s_start = mot;
-          break;
-        case 2:
-          s_end = mot;
-          break;
-        case 3:
-          s_type = mot;
-          break;
-        case 4:
-          s_value = mot;
-          break;
-        default:
-          break;
-        }
-        i++;
+      vector<string> res;
+      if (this->getFormat() == "BED") {
+         res = this->parseBEDLine(ligneCNV);
+      } else {
+        res = this->parseVCFLine(ligneCNV);
       }
 
+
       // type conversion
-      long start = string_to_int(s_start);
-      long end = string_to_int(s_end);
-      unsigned int value = string_to_int(s_value);
+      chromosome = res[0];
+      s_type = res[3];
+      long start = string_to_int(res[1]);
+      long end = string_to_int(res[2]);
+      unsigned int value = string_to_int(res[4]);
 
       // size filter 
       if ((end - start) < this->getFilterSize()) {
@@ -438,37 +536,26 @@ void cnvCompare::computeCounts() {
     while (getline(cnvStream, ligneCNV)) {
       // need to deal with header "#"
       if (ligneCNV.find(header) == 0) {
+        if (this->getFormat() == "VCF") {
+          outStream << ligneCNV; 
+        }
         continue;
       }
-      i = 0;
-      // get information from the line
-      istringstream issLigne(ligneCNV);
-      while (getline(issLigne, mot, '\t')) {
-        switch (i) {
-        case 0:
-          chromosome = mot;
-          break;
-        case 1:
-          s_start = mot;
-          break;
-        case 2:
-          s_end = mot;
-          break;
-        case 3:
-          s_type = mot;
-          break;
-        case 4:
-          s_value = mot;
-          break;
-        default:
-          break;
-        }
-        i++;
+      vector<string> res;
+      if (this->getFormat() == "BED") {
+         res = this->parseBEDLine(ligneCNV);
+      } else {
+        res = this->parseVCFLine(ligneCNV);
       }
+
+
       // type conversion
-      long start = string_to_int(s_start);
-      long end = string_to_int(s_end);
-      unsigned int value = string_to_int(s_value);
+      chromosome = res[0];
+      s_type = res[3];
+      long start = string_to_int(res[1]);
+      long end = string_to_int(res[2]);
+      unsigned int value = string_to_int(res[4]);
+      
       if (value > 5) {
         value = 5;
       }
@@ -506,13 +593,68 @@ void cnvCompare::computeCounts() {
         m.push_back((double)(s.second));
       }
       double mean = moyenne_calculator(m);
-      outStream << chromosome << "\t" << start << "\t" << end << "\t";
-      if (value > 2) {
-        outStream << "DUP\t";
+
+      // need to adapt the output according to the choosen format
+      if (this->getFormat() == "BED") {
+        outStream << chromosome << "\t" << start << "\t" << end << "\t";
+        if (value > 2) {
+          outStream << "DUP\t";
+        } else {
+          outStream << "DEL\t";
+        }
+        outStream << value << "\t" << mean << "/" << this->getNbFile() << endl;
       } else {
-        outStream << "DEL\t";
+        // output VCF 
+        res = this->parseVCFLine(ligneCNV);
+        istringstream issLigne(ligneCNV);
+        istringstream issInfo;
+        string mot; 
+        string info; 
+        string infomot;
+        string svtype; 
+        string ciend; 
+        string value; 
+        
+        while (getline(issLigne, mot, '\t')) {
+          switch (i) {
+          case 0:
+            outStream << mot; 
+            break;
+          case 7:
+            outStream << "\t";
+            info = mot; 
+            issInfo.str(info);
+            while (getline(issInfo, infomot , ';')) {
+              if (infomot.find("SVTYPE=")) {
+                svtype = parseOnSep(infomot, "=")[1];
+                continue;
+              }
+              if (infomot.find("CIEND=")) {
+                ciend = parseOnSep(infomot, "=")[1];
+                continue;
+              }
+              if (infomot.find("VALUE=")) {
+                value = parseOnSep(infomot, "=")[1];
+                continue;
+              }
+              outStream << infomot << ";";
+            }
+            outStream << "CIEND=" << ciend << ";VALUE=" << value << ";SVTYPE="; 
+            if (string_to_int(value) > 2) {
+              outStream << "DUP;"; 
+            } else {
+              outStream << "DEL;";
+            }
+            outStream << "COUNT=" << mean << "/" << this->getNbFile();
+            break;
+          default:
+            outStream << "\t" << mot;
+            break;
+          }
+          i++;
+        }
+        outStream << endl; 
       }
-      outStream << value << "\t" << mean << "/" << this->getNbFile() << endl;
     }
 
     outStream.close();
