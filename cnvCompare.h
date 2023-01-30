@@ -24,6 +24,8 @@ class cnvCompare
 		std::string getFormat(); 
 		int getFilterSize();
 		void setFormat(bool, bool);
+		std::vector<std::string> parseBEDLine(std::string);
+		std::vector<std::string> parseVCFLine(std::string);
 
 	private:
 		std::string inputFile;
