@@ -238,7 +238,7 @@ void cnvCompare::computeChrCounts(string incChr) {
       // need to deal with header "#"
       if (ligneCNV.find(header) == 0) {
         if ((this->getFormat() == "VCF") && (incChr == "chr1")) {
-          outStream << ligneCNV; 
+          outStream << ligneCNV << endl; 
         }
         continue;
       }
@@ -296,7 +296,8 @@ void cnvCompare::computeChrCounts(string incChr) {
         string svtype; 
         string ciend; 
         string value; 
-        
+        i = 0; 
+
         while (getline(issLigne, mot, '\t')) {
           switch (i) {
           case 0:
@@ -307,15 +308,15 @@ void cnvCompare::computeChrCounts(string incChr) {
             info = mot; 
             issInfo.str(info);
             while (getline(issInfo, infomot , ';')) {
-              if (infomot.find("SVTYPE=")) {
+              if (infomot.find("SVTYPE=") == 0) {
                 svtype = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if ((infomot.find("CIEND=")) || (infomot.find("END="))) {
+              if (infomot.find("CIEND=") == 0) {
                 ciend = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if (infomot.find("VALUE=")) {
+              if (infomot.find("VALUE=") == 0) {
                 value = parseOnSep(infomot, "=")[1];
                 continue;
               }
@@ -391,6 +392,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
 
   // get information from the line
   istringstream issLigne(incLine);
+  i = 0; 
   while (getline(issLigne, mot, '\t')) {
     switch (i) {
     case 0:
@@ -403,13 +405,13 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       info = mot; 
       issInfo.str(info);
       while (getline(issInfo, infomot , ';')) {
-        if (infomot.find("SVTYPE=")) {
+        if (infomot.find("SVTYPE=") == 0) {
           temp["SVTYPE"] = parseOnSep(infomot, "=")[1];
         }
-        if ((infomot.find("CIEND="))  || (infomot.find("END="))) {
+        if (infomot.find("CIEND=") == 0) {
           temp["CIEND"] = parseOnSep(infomot, "=")[1];
         }
-        if (infomot.find("VALUE=")) {
+        if (infomot.find("VALUE=") == 0) {
           temp["VALUE"] = parseOnSep(infomot, "=")[1];
         }
       }
@@ -537,7 +539,7 @@ void cnvCompare::computeCounts() {
       // need to deal with header "#"
       if (ligneCNV.find(header) == 0) {
         if (this->getFormat() == "VCF") {
-          outStream << ligneCNV; 
+          outStream << ligneCNV << endl; 
         }
         continue;
       }
@@ -614,6 +616,7 @@ void cnvCompare::computeCounts() {
         string svtype; 
         string ciend; 
         string value; 
+        i = 0;
         
         while (getline(issLigne, mot, '\t')) {
           switch (i) {
@@ -625,15 +628,15 @@ void cnvCompare::computeCounts() {
             info = mot; 
             issInfo.str(info);
             while (getline(issInfo, infomot , ';')) {
-              if (infomot.find("SVTYPE=")) {
+              if (infomot.find("SVTYPE=") == 0) {
                 svtype = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if ((infomot.find("CIEND="))  || (infomot.find("END="))) {
+              if (infomot.find("CIEND=") == 0) {
                 ciend = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if (infomot.find("VALUE=")) {
+              if (infomot.find("VALUE=") == 0) {
                 value = parseOnSep(infomot, "=")[1];
                 continue;
               }
