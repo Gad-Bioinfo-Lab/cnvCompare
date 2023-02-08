@@ -311,7 +311,7 @@ void cnvCompare::computeChrCounts(string incChr) {
                 svtype = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if (infomot.find("CIEND=")) {
+              if ((infomot.find("CIEND=")) || (infomot.find("END="))) {
                 ciend = parseOnSep(infomot, "=")[1];
                 continue;
               }
@@ -406,7 +406,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
         if (infomot.find("SVTYPE=")) {
           temp["SVTYPE"] = parseOnSep(infomot, "=")[1];
         }
-        if (infomot.find("CIEND=")) {
+        if ((infomot.find("CIEND="))  || (infomot.find("END="))) {
           temp["CIEND"] = parseOnSep(infomot, "=")[1];
         }
         if (infomot.find("VALUE=")) {
@@ -629,7 +629,7 @@ void cnvCompare::computeCounts() {
                 svtype = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if (infomot.find("CIEND=")) {
+              if ((infomot.find("CIEND="))  || (infomot.find("END="))) {
                 ciend = parseOnSep(infomot, "=")[1];
                 continue;
               }
