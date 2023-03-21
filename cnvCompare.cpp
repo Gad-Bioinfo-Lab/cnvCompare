@@ -170,6 +170,11 @@ void cnvCompare::getDataWhole(string incChr) {
       }
       nbLigneFile++;
       s_type = res[3];
+
+      // Pass if not del / dup
+      if ((s_type != "DEL") && (s_type != "DUP")) {
+        continue;
+      }
       long start = string_to_int(res[1]);
       long end = string_to_int(res[2]);
       unsigned int value = string_to_int(res[4]);
@@ -312,7 +317,7 @@ void cnvCompare::computeChrCounts(string incChr) {
                 svtype = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if (infomot.find("CIEND=") == 0) {
+              if (infomot.find("END=") == 0) {
                 ciend = parseOnSep(infomot, "=")[1];
                 continue;
               }
@@ -322,7 +327,7 @@ void cnvCompare::computeChrCounts(string incChr) {
               }
               outStream << infomot << ";";
             }
-            outStream << "CIEND=" << ciend << ";VALUE=" << value << ";SVTYPE="; 
+            outStream << "END=" << ciend << ";VALUE=" << value << ";SVTYPE="; 
             if (string_to_int(value) > 2) {
               outStream << "DUP;"; 
             } else {
@@ -408,8 +413,8 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
         if (infomot.find("SVTYPE=") == 0) {
           temp["SVTYPE"] = parseOnSep(infomot, "=")[1];
         }
-        if (infomot.find("CIEND=") == 0) {
-          temp["CIEND"] = parseOnSep(infomot, "=")[1];
+        if (infomot.find("END=") == 0) {
+          temp["END"] = parseOnSep(infomot, "=")[1];
         }
         if (infomot.find("VALUE=") == 0) {
           temp["VALUE"] = parseOnSep(infomot, "=")[1];
@@ -423,7 +428,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
   }
 
   // add data to the vector from the temp map 
-  output.push_back(temp["CIEND"]);
+  output.push_back(temp["END"]);
   output.push_back(temp["SVTYPE"]);
   output.push_back(temp["VALUE"]);
 
@@ -554,6 +559,13 @@ void cnvCompare::computeCounts() {
       // type conversion
       chromosome = res[0];
       s_type = res[3];
+
+      // pass if not del or dup 
+      if ((s_type != "DUP") && (s_type != "DEL")) {
+        outStream << ligne << endl; 
+        continue; 
+      }
+
       long start = string_to_int(res[1]);
       long end = string_to_int(res[2]);
       unsigned int value = string_to_int(res[4]);
@@ -632,7 +644,7 @@ void cnvCompare::computeCounts() {
                 svtype = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if (infomot.find("CIEND=") == 0) {
+              if (infomot.find("END=") == 0) {
                 ciend = parseOnSep(infomot, "=")[1];
                 continue;
               }
@@ -642,7 +654,7 @@ void cnvCompare::computeCounts() {
               }
               outStream << infomot << ";";
             }
-            outStream << "CIEND=" << ciend << ";VALUE=" << value << ";SVTYPE="; 
+            outStream << "END=" << ciend << ";VALUE=" << value << ";SVTYPE="; 
             if (string_to_int(value) > 2) {
               outStream << "DUP;"; 
             } else {
