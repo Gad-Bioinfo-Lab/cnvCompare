@@ -19,17 +19,19 @@
 
 using namespace std;
 
-cnvCompare::cnvCompare() {
+cnvCompare::cnvCompare()
+{
   //
 }
 
-cnvCompare::cnvCompare(string iF, int nT, int s) {
+cnvCompare::cnvCompare(string iF, int nT, int s)
+{
   this->inputFile = iF;
   this->nbThread = nT;
   this->useControls = false;
   this->filterSize = s;
   int n = this->fillMap(iF, "sample");
-  cerr << n << " files added to sample list" << endl; 
+  cerr << n << " files added to sample list" << endl;
   this->chromosomeMap.push_back("chr1");
   this->chromosomeMap.push_back("chr2");
   this->chromosomeMap.push_back("chr3");
@@ -56,16 +58,17 @@ cnvCompare::cnvCompare(string iF, int nT, int s) {
   this->chromosomeMap.push_back("chrY");
 }
 
-cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
+cnvCompare::cnvCompare(string iF, string cF, int nT, int s)
+{
   this->inputFile = iF;
   this->controlFile = cF;
   this->nbThread = nT;
   this->useControls = true;
   this->filterSize = s;
   int n = this->fillMap(iF, "sample");
-  cerr << n << " files added to sample list" << endl; 
+  cerr << n << " files added to sample list" << endl;
   int m = this->fillMap(cF, "control");
-  cerr << m << " files added to control list" << endl; 
+  cerr << m << " files added to control list" << endl;
 
   this->chromosomeMap.push_back("chr1");
   this->chromosomeMap.push_back("chr2");
@@ -93,18 +96,18 @@ cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
   this->chromosomeMap.push_back("chrY");
 }
 
-void cnvCompare::mainLoop() {
+void cnvCompare::mainLoop()
+{
   this->getData();
   this->computeCounts();
 }
 
-
-
-
 // Alt loop : store all data for 1 chromosome and perform counts on it
 // need a huge amount of RAM.
-void cnvCompare::altLoop() {
-  for (auto &a : this->chromosomeMap) {
+void cnvCompare::altLoop()
+{
+  for (auto &a : this->chromosomeMap)
+  {
     this->getDataWhole(a);
     this->computeChrCounts(a);
     this->cleanData();
@@ -113,7 +116,8 @@ void cnvCompare::altLoop() {
 
 void cnvCompare::cleanData() { this->dataByChr.clear(); }
 
-void cnvCompare::getDataWhole(string incChr) {
+void cnvCompare::getDataWhole(string incChr)
+{
   cerr << "Gathering data for chr " << incChr << endl;
   string ligne;
   string ligneCNV;
@@ -139,58 +143,69 @@ void cnvCompare::getDataWhole(string incChr) {
   this->nbFile = 0;
 
   // tsv parsing
-  map <string, string>::iterator myIterA;
-  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++) {
+  map<string, string>::iterator myIterA;
+  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++)
+  {
     ligne = myIterA->first;
     ifstream cnvStream(ligne.c_str());
     cerr << "\tReading file " << ligne << "\t";
     this->nbFile++;
     long nbLigneFile = 0;
-    while (getline(cnvStream, ligneCNV)) {
+    while (getline(cnvStream, ligneCNV))
+    {
 
       // need to deal with header "#"
-      if (ligneCNV.find(header) == 0) {
+      if (ligneCNV.find(header) == 0)
+      {
         continue;
       }
 
       vector<string> res;
-      if (this->getFormat() == "BED") {
-         res = this->parseBEDLine(ligneCNV);
-      } else {
+      if (this->getFormat() == "BED")
+      {
+        res = this->parseBEDLine(ligneCNV);
+      }
+      else
+      {
         res = this->parseVCFLine(ligneCNV);
       }
 
-
       // type conversion
       chromosome = res[0];
-      
+
       // Pass the line if not the asked chromosome
-      if (chromosome != incChr) {
+      if (chromosome != incChr)
+      {
         continue;
       }
       nbLigneFile++;
       s_type = res[3];
 
       // Pass if not del / dup
-      if ((s_type != "DEL") && (s_type != "DUP")) {
+      if ((s_type != "DEL") && (s_type != "DUP"))
+      {
         continue;
       }
       long start = string_to_int(res[1]);
       long end = string_to_int(res[2]);
       unsigned int value = string_to_int(res[4]);
 
-      // size filter 
-      if ((end - start) < this->getFilterSize()) {
+      // size filter
+      if ((end - start) < this->getFilterSize())
+      {
         continue;
       }
 
       // thresholding the dups
-      if (value > 5) {
+      if (value > 5)
+      {
         value = 5;
       }
 
-      for (long i = start; i <= end; i++) {
-        if (not((this->dataByChr[value]).count(i) > 0)) {
+      for (long i = start; i <= end; i++)
+      {
+        if (not((this->dataByChr[value]).count(i) > 0))
+        {
           this->dataByChr[value][i] = 0;
         }
         this->dataByChr[value][i]++;
@@ -201,7 +216,8 @@ void cnvCompare::getDataWhole(string incChr) {
   cerr << "Ended with " << this->getNbFile() << " files" << endl;
 }
 
-void cnvCompare::computeChrCounts(string incChr) {
+void cnvCompare::computeChrCounts(string incChr)
+{
   std::cout.precision(3);
   cerr << "Computing counts for chr " << incChr << endl;
   struct timeval tbegin, tend;
@@ -218,42 +234,55 @@ void cnvCompare::computeChrCounts(string incChr) {
   string s_value;
 
   // tsv parsing
-  map <string, string>::iterator myIterA;
-  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++) {
+  map<string, string>::iterator myIterA;
+  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++)
+  {
     ligne = myIterA->first;
-    string s = myIterA->second; 
-    if (s == "control") {
+    string s = myIterA->second;
+    if (s == "control")
+    {
       continue;
     }
     ifstream cnvStream(ligne.c_str());
     cerr << "\tReading file " << ligne << endl;
     // if "merged" isn't present in filename, renaming failed and rewrite the original file !
-    // TO CORRECT 
+    // TO CORRECT
     string outFileName = pyReplace(ligne, "merged", "count");
     cerr << "\t\tWriting in file " << outFileName << endl;
     ofstream outStream;
 
-    if (incChr == "chr1") {
+    if (incChr == "chr1")
+    {
       outStream.open(outFileName.c_str(), ios::out);
-    } else {
+    }
+    else
+    {
       outStream.open(outFileName.c_str(), ios::out | ios::app);
     }
 
-    while (getline(cnvStream, ligneCNV)) {
+
+    // cerr << "The format is : " << this->getFormat() << endl; 
+
+    while (getline(cnvStream, ligneCNV))
+    {
       // need to deal with header "#"
-      if (ligneCNV.find(header) == 0) {
-        if ((this->getFormat() == "VCF") && (incChr == "chr1")) {
-          outStream << ligneCNV << endl; 
+      if (ligneCNV.find(header) == 0)
+      {
+        if ((this->getFormat() == "VCF") && (incChr == "chr1"))
+        {
+          outStream << ligneCNV << endl;
         }
         continue;
       }
       vector<string> res;
-      if (this->getFormat() == "BED") {
-         res = this->parseBEDLine(ligneCNV);
-      } else {
+      if (this->getFormat() == "BED")
+      {
+        res = this->parseBEDLine(ligneCNV);
+      }
+      else
+      {
         res = this->parseVCFLine(ligneCNV);
       }
-
 
       // type conversion
       chromosome = res[0];
@@ -261,76 +290,110 @@ void cnvCompare::computeChrCounts(string incChr) {
       long start = string_to_int(res[1]);
       long end = string_to_int(res[2]);
       unsigned int value = string_to_int(res[4]);
-      if (value > 5) {
+      if (value > 5)
+      {
         value = 5;
       }
       // skip if not the good chr
-      if (chromosome != incChr) {
+      if (chromosome != incChr)
+      {
         continue;
       }
 
 
+      // pass if not del or dup
+      // verifier la condition : a priori les BND et INV passent à travers
+      // cerr << "DEBUG : s_type = " << s_type << endl;
+
+      if ((s_type != "DUP") && (s_type != "DEL"))
+      {
+        outStream << ligneCNV << endl;
+        continue;
+      }
+
+
+
+
       // counts
       vector<double> m;
-      for (long i = start; i <= end; i++) {
-        if ((this->dataByChr[value]).count(i) > 0) {
+      for (long i = start; i <= end; i++)
+      {
+        if ((this->dataByChr[value]).count(i) > 0)
+        {
           m.push_back((double)(this->dataByChr[value][i]));
-        } else {
+        }
+        else
+        {
           m.push_back(0.0);
         }
       }
 
       double mean = moyenne_calculator(m);
-     // need to adapt the output according to the choosen format
-      if (this->getFormat() == "BED") {
+      // need to adapt the output according to the choosen format
+      if (this->getFormat() == "BED")
+      {
         outStream << chromosome << "\t" << start << "\t" << end << "\t";
-        if (value > 2) {
+        if (value > 2)
+        {
           outStream << "DUP\t";
-        } else {
+        }
+        else
+        {
           outStream << "DEL\t";
         }
         outStream << value << "\t" << mean << "/" << this->getNbFile() << endl;
-      } else {
-        // output VCF 
+      }
+      else
+      {
+        // output VCF
         res = this->parseVCFLine(ligneCNV);
         istringstream issLigne(ligneCNV);
         istringstream issInfo;
-        string mot; 
-        string info; 
+        string mot;
+        string info;
         string infomot;
-        string svtype; 
-        string ciend; 
-        string value; 
-        i = 0; 
+        string svtype;
+        string ciend;
+        string value;
+        i = 0;
 
-        while (getline(issLigne, mot, '\t')) {
-          switch (i) {
+        while (getline(issLigne, mot, '\t'))
+        {
+          switch (i)
+          {
           case 0:
-            outStream << mot; 
+            outStream << mot;
             break;
           case 7:
             outStream << "\t";
-            info = mot; 
+            info = mot;
             issInfo.str(info);
-            while (getline(issInfo, infomot , ';')) {
-              if (infomot.find("SVTYPE=") == 0) {
+            while (getline(issInfo, infomot, ';'))
+            {
+              if (infomot.find("SVTYPE=") == 0)
+              {
                 svtype = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if (infomot.find("END=") == 0) {
+              if (infomot.find("END=") == 0)
+              {
                 ciend = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if (infomot.find("VALUE=") == 0) {
+              if (infomot.find("VALUE=") == 0)
+              {
                 value = parseOnSep(infomot, "=")[1];
                 continue;
               }
               outStream << infomot << ";";
             }
-            outStream << "END=" << ciend << ";VALUE=" << value << ";SVTYPE="; 
-            if (string_to_int(value) > 2) {
-              outStream << "DUP;"; 
-            } else {
+            outStream << "END=" << ciend << ";VALUE=" << value << ";SVTYPE=";
+            if (string_to_int(value) > 2)
+            {
+              outStream << "DUP;";
+            }
+            else
+            {
               outStream << "DEL;";
             }
             outStream << "COUNT=" << mean << "/" << this->getNbFile();
@@ -341,7 +404,7 @@ void cnvCompare::computeChrCounts(string incChr) {
           }
           i++;
         }
-        outStream << endl; 
+        outStream << endl;
       }
     }
 
@@ -349,17 +412,19 @@ void cnvCompare::computeChrCounts(string incChr) {
   }
 }
 
-
 // output a vector containing : chr start end type value from a BED line
-vector<string> cnvCompare::parseBEDLine(string incLine) {
+vector<string> cnvCompare::parseBEDLine(string incLine)
+{
   vector<string> output;
   string mot;
   short int i = 0;
-      
+
   // get information from the line
   istringstream issLigne(incLine);
-  while (getline(issLigne, mot, '\t')) {
-    switch (i) {
+  while (getline(issLigne, mot, '\t'))
+  {
+    switch (i)
+    {
     case 0:
       output.push_back(mot);
       break;
@@ -380,26 +445,28 @@ vector<string> cnvCompare::parseBEDLine(string incLine) {
     }
     i++;
   }
-  return output; 
+  return output;
 }
 
-
 // output a vector containing : chr start end type value from a VCF line
-vector<string> cnvCompare::parseVCFLine(string incLine) {
+vector<string> cnvCompare::parseVCFLine(string incLine)
+{
   vector<string> output;
-  map<string, string> temp; 
+  map<string, string> temp;
   string mot;
-  string infomot; 
-  string info; 
+  string infomot;
+  string info;
   short int i = 0;
   istringstream issInfo;
   temp["SVTYPE"] = "NONE";
 
   // get information from the line
   istringstream issLigne(incLine);
-  i = 0; 
-  while (getline(issLigne, mot, '\t')) {
-    switch (i) {
+  i = 0;
+  while (getline(issLigne, mot, '\t'))
+  {
+    switch (i)
+    {
     case 0:
       output.push_back(mot);
       break;
@@ -407,16 +474,20 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       output.push_back(mot);
       break;
     case 7:
-      info = mot; 
+      info = mot;
       issInfo.str(info);
-      while (getline(issInfo, infomot , ';')) {
-        if (infomot.find("SVTYPE=") == 0) {
+      while (getline(issInfo, infomot, ';'))
+      {
+        if (infomot.find("SVTYPE=") == 0)
+        {
           temp["SVTYPE"] = parseOnSep(infomot, "=")[1];
         }
-        if (infomot.find("END=") == 0) {
+        if (infomot.find("END=") == 0)
+        {
           temp["END"] = parseOnSep(infomot, "=")[1];
         }
-        if (infomot.find("VALUE=") == 0) {
+        if (infomot.find("VALUE=") == 0)
+        {
           temp["VALUE"] = parseOnSep(infomot, "=")[1];
         }
       }
@@ -427,19 +498,16 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
     i++;
   }
 
-  // add data to the vector from the temp map 
+  // add data to the vector from the temp map
   output.push_back(temp["END"]);
   output.push_back(temp["SVTYPE"]);
   output.push_back(temp["VALUE"]);
 
-  return output; 
+  return output;
 }
 
-
-
-
-
-void cnvCompare::getData() {
+void cnvCompare::getData()
+{
   cerr << "Gathering data" << endl;
   struct timeval tbegin, tend;
   string ligne;
@@ -455,26 +523,31 @@ void cnvCompare::getData() {
   string s_value;
 
   // tsv parsing
-  map <string, string>::iterator myIterA;
-  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++) {
+  map<string, string>::iterator myIterA;
+  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++)
+  {
     ligne = myIterA->first;
     ifstream cnvStream(ligne.c_str());
     cerr << "\tReading file " << ligne << "\t";
     this->nbFile++;
     long nbLigneFile = 0;
-    while (getline(cnvStream, ligneCNV)) {
+    while (getline(cnvStream, ligneCNV))
+    {
       // need to deal with header "#"
-      if (ligneCNV.find(header) == 0) {
+      if (ligneCNV.find(header) == 0)
+      {
         continue;
       }
       nbLigneFile++;
       vector<string> res;
-      if (this->getFormat() == "BED") {
-         res = this->parseBEDLine(ligneCNV);
-      } else {
+      if (this->getFormat() == "BED")
+      {
+        res = this->parseBEDLine(ligneCNV);
+      }
+      else
+      {
         res = this->parseVCFLine(ligneCNV);
       }
-
 
       // type conversion
       chromosome = res[0];
@@ -483,17 +556,19 @@ void cnvCompare::getData() {
       long end = string_to_int(res[2]);
       unsigned int value = string_to_int(res[4]);
 
-      // size filter 
-      if ((end - start) < this->getFilterSize()) {
+      // size filter
+      if ((end - start) < this->getFilterSize())
+      {
         continue;
       }
 
-
-      if (value > 5) {
+      if (value > 5)
+      {
         value = 5;
       }
 
-      if (!(this->data.count(chromosome) > 0)) {
+      if (!(this->data.count(chromosome) > 0))
+      {
         map<unsigned int, map<long, vector<long>>> tempMap;
         this->data[chromosome] = tempMap;
         map<long, vector<long>> tempMap2;
@@ -511,7 +586,8 @@ void cnvCompare::getData() {
   cerr << "Ended with " << this->getNbFile() << " files" << endl;
 }
 
-void cnvCompare::computeCounts() {
+void cnvCompare::computeCounts()
+{
   cerr << "Computing counts" << endl;
   struct timeval tbegin, tend;
   string ligne;
@@ -526,11 +602,13 @@ void cnvCompare::computeCounts() {
   string s_end;
   string s_value;
 
-  map <string, string>::iterator myIterA;
-  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++) {
+  map<string, string>::iterator myIterA;
+  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++)
+  {
     ligne = myIterA->first;
-    string s = myIterA->second; 
-    if (s == "control") {
+    string s = myIterA->second;
+    if (s == "control")
+    {
       continue;
     }
 
@@ -540,37 +618,47 @@ void cnvCompare::computeCounts() {
     cerr << "\t\tWriting in file " << outFileName << endl;
     ofstream outStream;
     outStream.open(outFileName.c_str(), ios::out);
-    while (getline(cnvStream, ligneCNV)) {
+    while (getline(cnvStream, ligneCNV))
+    {
       // need to deal with header "#"
-      if (ligneCNV.find(header) == 0) {
-        if (this->getFormat() == "VCF") {
-          outStream << ligneCNV << endl; 
+      if (ligneCNV.find(header) == 0)
+      {
+        if (this->getFormat() == "VCF")
+        {
+          outStream << ligneCNV << endl;
         }
         continue;
       }
       vector<string> res;
-      if (this->getFormat() == "BED") {
-         res = this->parseBEDLine(ligneCNV);
-      } else {
+      if (this->getFormat() == "BED")
+      {
+        res = this->parseBEDLine(ligneCNV);
+      }
+      else
+      {
         res = this->parseVCFLine(ligneCNV);
       }
-
 
       // type conversion
       chromosome = res[0];
       s_type = res[3];
 
-      // pass if not del or dup 
-      if ((s_type != "DUP") && (s_type != "DEL")) {
-        outStream << ligne << endl; 
-        continue; 
+      // pass if not del or dup
+      // verifier la condition : a priori les BND et INV passent à travers
+      // cerr << "DEBUG : s_type = " << s_type << endl;
+
+      if ((s_type != "DUP") && (s_type != "DEL"))
+      {
+        outStream << ligneCNV << endl;
+        continue;
       }
 
       long start = string_to_int(res[1]);
       long end = string_to_int(res[2]);
       unsigned int value = string_to_int(res[4]);
-      
-      if (value > 5) {
+
+      if (value > 5)
+      {
         value = 5;
       }
       // counts
@@ -578,7 +666,8 @@ void cnvCompare::computeCounts() {
       map<long, vector<long>> tmpMap;
       tmpMap = this->data[chromosome][value];
       // init data counts
-      for (long j = start; j <= end; j++) {
+      for (long j = start; j <= end; j++)
+      {
         counts[j] = 0;
       }
       // get pair of iterators on range of intervals including the start point
@@ -586,15 +675,19 @@ void cnvCompare::computeCounts() {
       auto ub = tmpMap.upper_bound(end);
       // cerr << "\t\t\tGet range of starts from : \n";
       map<long, vector<long>>::iterator myIterC;
-      for (myIterC = lb; myIterC != ub; myIterC++) {
+      for (myIterC = lb; myIterC != ub; myIterC++)
+      {
         vector<long>::iterator myIterD;
         for (myIterD = (myIterC->second).begin();
-              myIterD != (myIterC->second).end(); myIterD++) {
+             myIterD != (myIterC->second).end(); myIterD++)
+        {
           // cerr <<  "\t\t\t\t" << myIterC->first << " to " << *myIterD <<
           // endl;
           long i = myIterC->first;
-          while (i <= *myIterD) {
-            if (i > end) {
+          while (i <= *myIterD)
+          {
+            if (i > end)
+            {
               break;
             }
             counts[i]++;
@@ -603,61 +696,77 @@ void cnvCompare::computeCounts() {
         }
       }
       vector<double> m;
-      for (auto &s : counts) {
+      for (auto &s : counts)
+      {
         m.push_back((double)(s.second));
       }
       double mean = moyenne_calculator(m);
 
       // need to adapt the output according to the choosen format
-      if (this->getFormat() == "BED") {
+      if (this->getFormat() == "BED")
+      {
         outStream << chromosome << "\t" << start << "\t" << end << "\t";
-        if (value > 2) {
+        if (value > 2)
+        {
           outStream << "DUP\t";
-        } else {
+        }
+        else
+        {
           outStream << "DEL\t";
         }
         outStream << value << "\t" << mean << "/" << this->getNbFile() << endl;
-      } else {
-        // output VCF 
+      }
+      else
+      {
+        // output VCF
         res = this->parseVCFLine(ligneCNV);
         istringstream issLigne(ligneCNV);
         istringstream issInfo;
-        string mot; 
-        string info; 
+        string mot;
+        string info;
         string infomot;
-        string svtype; 
-        string ciend; 
-        string value; 
+        string svtype;
+        string ciend;
+        string value;
         i = 0;
-        
-        while (getline(issLigne, mot, '\t')) {
-          switch (i) {
+
+        while (getline(issLigne, mot, '\t'))
+        {
+          switch (i)
+          {
           case 0:
-            outStream << mot; 
+            outStream << mot;
             break;
           case 7:
             outStream << "\t";
-            info = mot; 
+            info = mot;
             issInfo.str(info);
-            while (getline(issInfo, infomot , ';')) {
-              if (infomot.find("SVTYPE=") == 0) {
+            while (getline(issInfo, infomot, ';'))
+            {
+              if (infomot.find("SVTYPE=") == 0)
+              {
                 svtype = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if (infomot.find("END=") == 0) {
+              if (infomot.find("END=") == 0)
+              {
                 ciend = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if (infomot.find("VALUE=") == 0) {
+              if (infomot.find("VALUE=") == 0)
+              {
                 value = parseOnSep(infomot, "=")[1];
                 continue;
               }
               outStream << infomot << ";";
             }
-            outStream << "END=" << ciend << ";VALUE=" << value << ";SVTYPE="; 
-            if (string_to_int(value) > 2) {
-              outStream << "DUP;"; 
-            } else {
+            outStream << "END=" << ciend << ";VALUE=" << value << ";SVTYPE=";
+            if (string_to_int(value) > 2)
+            {
+              outStream << "DUP;";
+            }
+            else
+            {
               outStream << "DEL;";
             }
             outStream << "COUNT=" << mean << "/" << this->getNbFile();
@@ -668,7 +777,7 @@ void cnvCompare::computeCounts() {
           }
           i++;
         }
-        outStream << endl; 
+        outStream << endl;
       }
     }
 
@@ -678,23 +787,28 @@ void cnvCompare::computeCounts() {
 
 short int cnvCompare::getNbFile() { return this->nbFile; }
 
-string cnvCompare::getInputFile() {
-  return this->inputFile; 
+string cnvCompare::getInputFile()
+{
+  return this->inputFile;
 }
 
-string cnvCompare::getControlFile() {
+string cnvCompare::getControlFile()
+{
   return this->controlFile;
 }
 
-
-int cnvCompare::fillMap(string incFile, string status) {
+int cnvCompare::fillMap(string incFile, string status)
+{
   ifstream allStream(incFile.c_str());
   string ligne;
-  if (allStream) {
-    while (getline(allStream, ligne)) {
+  if (allStream)
+  {
+    while (getline(allStream, ligne))
+    {
       ifstream cnvStream(ligne.c_str());
       cerr << "\tadding file " << ligne << " as " << status << endl;
-      if (!IsFileReadable(ligne)) {
+      if (!IsFileReadable(ligne))
+      {
         cerr << "File provided as " << status << " : " << ligne << " is not accessible : passsing file" << endl;
         continue;
       }
@@ -706,24 +820,27 @@ int cnvCompare::fillMap(string incFile, string status) {
   return this->nbFile;
 }
 
-
-int cnvCompare::getFilterSize() {
+int cnvCompare::getFilterSize()
+{
   return this->filterSize;
 }
 
 //
 
-void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice) {
+void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice)
+{
   this->useVCFFormat = incVCFChoice;
   this->useBEDFormat = incBEDChoice;
 }
 
-string cnvCompare::getFormat() {
-  if (this->useVCFFormat) {
-    return "VCF"; 
-  } else {
+string cnvCompare::getFormat()
+{
+  if (this->useVCFFormat)
+  {
+    return "VCF";
+  }
+  else
+  {
     return "BED";
   }
-
-
 }
