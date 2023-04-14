@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <unordered_map>
 
 class cnvCompare
 {
@@ -32,7 +33,7 @@ class cnvCompare
 		std::string controlFile;
 		int nbThread;
 		std::map< std::string , std::map< unsigned int , std::map< long , std::vector< long > > > > data;
-		std::map<unsigned int , std::map<long, short> > dataByChr;
+		std::unordered_map<unsigned int , std::unordered_map<long, short> > dataByChr;
 		std::vector<std::string> chromosomeMap ;
 		short int nbFile = 0;
 		bool useControls = false; 
