@@ -1,6 +1,6 @@
 // C++ std libs
 #include <iostream>
-// #include <iomanip>
+#include <iomanip>
 #include <algorithm>
 #include <fstream>
 #include <map>
@@ -10,6 +10,9 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <vector>
+#include <iomanip>
+#include <unordered_map>
+//#include <ranges>
 
 // utils
 #include "utils.h"
@@ -132,7 +135,7 @@ void cnvCompare::getDataWhole(string incChr)
   string s_value;
 
   // prefill the container
-  map<long, short> tempMap2;
+  unordered_map<long, short> tempMap2;
   this->dataByChr[0] = tempMap2;
   this->dataByChr[1] = tempMap2;
   this->dataByChr[2] = tempMap2;
@@ -146,9 +149,10 @@ void cnvCompare::getDataWhole(string incChr)
   map<string, string>::iterator myIterA;
   for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++)
   {
+    struct timeval tbegin, tend;
     ligne = myIterA->first;
     ifstream cnvStream(ligne.c_str());
-    cerr << "\tReading file " << ligne << "\t";
+    cerr << "\tReading file " << ligne << "\t" << endl;
     this->nbFile++;
     long nbLigneFile = 0;
     while (getline(cnvStream, ligneCNV))
@@ -160,6 +164,7 @@ void cnvCompare::getDataWhole(string incChr)
         continue;
       }
 
+      // gettimeofday(&tbegin, NULL);
       vector<string> res;
       if (this->getFormat() == "BED")
       {
@@ -169,6 +174,8 @@ void cnvCompare::getDataWhole(string incChr)
       {
         res = this->parseVCFLine(ligneCNV);
       }
+      // gettimeofday(&tend, NULL);
+      // ExecMeasure(tbegin, tend, "Line parsing for " + this->getFormat());
 
       // type conversion
       chromosome = res[0];
@@ -178,7 +185,7 @@ void cnvCompare::getDataWhole(string incChr)
       {
         continue;
       }
-      nbLigneFile++;
+      
       s_type = res[3];
 
       // Pass if not del / dup
@@ -196,20 +203,44 @@ void cnvCompare::getDataWhole(string incChr)
         continue;
       }
 
+      // counting events after all filters
+      nbLigneFile++;
+
       // thresholding the dups
       if (value > 5)
       {
         value = 5;
       }
 
+
+      
+
+      // create the positions which don't exist
+      // for (long i = start; i <= end; i++)
+      // {
+      //   if (not((this->dataByChr[value]).count(i) > 0))
+      //   {
+      //     this->dataByChr[value].insert(std::pair{i, 0});
+      //   }
+      //   this->dataByChr[value][i]++;
+      // }
+      
+      // gettimeofday(&tbegin, NULL);
+
       for (long i = start; i <= end; i++)
       {
-        if (not((this->dataByChr[value]).count(i) > 0))
+        int value_to_insert = 0; 
+        if ((this->dataByChr[value]).find(i) != (this->dataByChr[value]).end())
         {
-          this->dataByChr[value][i] = 0;
+          value_to_insert += this->dataByChr[value][i] + 1; 
         }
-        this->dataByChr[value][i]++;
+        this->dataByChr[value].insert_or_assign(i, value_to_insert);
       }
+      // gettimeofday(&tend, NULL);
+      // ExecMeasure(tbegin, tend, "Reading event " + chromosome + ":" + int_to_string(start) + "-" + int_to_string(end) + " ; size : " + int_to_string(end-start));
+
+
+
     }
     cerr << " with " << nbLigneFile << " events detected " << endl;
   }
@@ -237,6 +268,7 @@ void cnvCompare::computeChrCounts(string incChr)
   map<string, string>::iterator myIterA;
   for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++)
   {
+    struct timeval tbegin, tend;
     ligne = myIterA->first;
     string s = myIterA->second;
     if (s == "control")
@@ -311,24 +343,19 @@ void cnvCompare::computeChrCounts(string incChr)
         continue;
       }
 
-
-
-
-      // counts
-      vector<double> m;
+      
+      // gettimeofday(&tbegin, NULL);
+      // counts 
+      double total = 0;
       for (long i = start; i <= end; i++)
       {
-        if ((this->dataByChr[value]).count(i) > 0)
-        {
-          m.push_back((double)(this->dataByChr[value][i]));
-        }
-        else
-        {
-          m.push_back(0.0);
-        }
+        total += (double)(this->dataByChr[value][i]);
       }
+      double mean = total / (double)((end-start)+1);
+      // gettimeofday(&tend, NULL);
+      // ExecMeasure(tbegin, tend, "Counting event " + chromosome + ":" + int_to_string(start) + "-" + int_to_string(end) + " ; size : " + int_to_string(end-start));
 
-      double mean = moyenne_calculator(m);
+      // gettimeofday(&tbegin, NULL);
       // need to adapt the output according to the choosen format
       if (this->getFormat() == "BED")
       {
@@ -406,10 +433,14 @@ void cnvCompare::computeChrCounts(string incChr)
         }
         outStream << endl;
       }
+      // gettimeofday(&tend, NULL);
+      // ExecMeasure(tbegin, tend, "VCF writing");
+
     }
 
     outStream.close();
   }
+  this->dataByChr.clear();
 }
 
 // output a vector containing : chr start end type value from a BED line
