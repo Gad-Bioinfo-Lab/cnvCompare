@@ -33,7 +33,19 @@ bool IsFileReadable( string file )
 // return value : void
 void ExecMeasure( struct timeval begin , struct timeval end , string operation )
 {
-	cerr << "Execution time for operation : " << operation << " : "  << end.tv_usec - begin.tv_usec << " µs"  << endl;
+	
+	string unit = "µs";
+	if ((end.tv_usec - begin.tv_usec) > sizeof(long)) {
+		end.tv_usec /= 1000; 
+		begin.tv_usec /= 1000;
+		unit = "ms";
+	}
+	// if ((end.tv_usec - begin.tv_usec) > sizeof(suseconds_t)) {
+	// 	end.tv_usec /= 1000; 
+	// 	begin.tv_usec /= 1000;
+	// 	unit = "s";
+	// }
+	cerr << "Execution time for operation : " << operation << " : "  << end.tv_usec - begin.tv_usec << " " << unit << endl;
 }
 
 

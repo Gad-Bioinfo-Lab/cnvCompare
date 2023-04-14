@@ -22,5 +22,5 @@ double moyenne_calculator( std::vector<double> );
 double FET( int , int , int , int );
 double logHypergeometricProb( int , int , int , int );
 double logFactoriel( int );
-
+double moyenne_calculator_array( double , int );
 #endif
