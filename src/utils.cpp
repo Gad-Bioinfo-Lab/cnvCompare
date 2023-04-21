@@ -10,16 +10,9 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
-#include <boost/math/distributions/chi_squared.hpp>
-#include <boost/math/distributions/hypergeometric.hpp>
-
 #include "utils.h"
 using namespace std;
-using namespace boost::math;
-using boost::math::chi_squared;
-using boost::math::quantile;
-using boost::math::complement;
-using boost::math::cdf;
+
 
 // test if a file is readable
 // return value : true if readable ; false if not
@@ -138,48 +131,7 @@ string strip( string inc )
 	return inc;
 }
 
-double chisquare( vector<double> toTest , vector<double> all )
-{
-	boost::math::chi_squared chi(1);
-	double a1 = toTest[0] ;
-	double a2 = toTest[1];
-	double b1 = all[0];
-	double b2 = all[1];;
 
-
-	double s = a1 + a2 + b1 + b2;
-	double K = s * (a1 * b2 - a2 * b1) * (a1 * b2 - a2 * b1) / (a1 + a2) / (b1 + b2) / (a1 + b1) / (a2 + b2);
-	double P = boost::math::cdf(chi, K);
-
-	return P;
-}
-
-
-double fisher_test(vector<double> toTest, vector<double> control )
-{
-	double a = toTest[0];
-	double b = toTest[1];
-	double c = control[0];
-	double d = control[1];
-
-	double N = a + b + c + d;
-	double r = a + c;
-	double n = c + d;
-	double max_for_k = min(r, n);
-	double min_for_k = (double)max(0, int(r + n - N));
-	hypergeometric_distribution<> hgd(r, n, N);
-	double cutoff = pdf(hgd, c);
-	double tmp_p = 0.0;
-	for(int k = min_for_k;k < max_for_k + 1;k++)
-	{
-		double p = pdf(hgd, k);
-		if(p <= cutoff)
-		{
-			tmp_p += p;
-		}
-	}
-	return tmp_p;
-}
 
 
 char checkBase(char incoming )
@@ -292,43 +244,3 @@ double moyenne_calculator( vector<double> incVector )
 	return moyenne;
 }
 
-// Method for calculating fisher exact test 2-sided, return the pvalue.
-double FET( int a , int b , int c , int d )
-{
-	int n = a + b + c + d;
-	double logpCutOff = logHypergeometricProb( a , b , c , d );
-	double pFraction = 0;
-	double logpValue = 0;
-
-	for( int x = 0 ; x <= n ; x ++ )
-	{
-		if( ( a + b - x >= 0 ) && ( a + c - x >= 0 ) && ( d - a + x >= 0 ) )
-		{
-			double l = logHypergeometricProb( x , a + b - x , a + c - x , d - a + x );
-			if( l <= logpCutOff )
-			{
-				pFraction += exp( l - logpCutOff );
-			}
-		}
-	}
-	logpValue = logpCutOff + log( pFraction );
-
-	return exp(logpValue);
-}
-
-// method for calculating the hypergeometrical log value  for the FET.
-double logHypergeometricProb( int a , int b , int c  , int d )
-{
-	return logFactoriel( a + b ) + logFactoriel( c + d ) + logFactoriel( a + c ) + logFactoriel( b + d )- logFactoriel( a ) - logFactoriel( b ) - logFactoriel( c ) - logFactoriel( d ) - logFactoriel( a + b + c + d );
-}
-
-// Method for calculating a log factoriel
-double logFactoriel( int inc )
-{
-	double ret;
-	for( ret = 0 ; inc > 0 ; inc -- )
-	{
-		ret += log( (double)inc );
-	}
-	return ret;
-}
