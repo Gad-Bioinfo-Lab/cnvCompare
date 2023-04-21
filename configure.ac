@@ -27,7 +27,7 @@ AC_PROG_CC
 
 # check support of ISO C++20
 # AX_CHECK_COMPILE_FLAG(-std=c++2a, AX_APPEND_FLAG([-std=c++2a]), AC_MSG_ERROR([-std=c++2a not supported, you may have to set CXXFLAGS to enable C++2a support.]))
-AX_CHECK_COMPILE_FLAG(-std=c++2a, AX_APPEND_FLAG([-std=c++2a]))
+AX_CHECK_COMPILE_FLAG(-std=c++2a, AX_APPEND_FLAG([-std=c++2a]), AC_MSG_ERROR(["std=c++2a not supported, you may have to set CXXFLAGS to enable C++2a support."]))
 
 # Checks for libraries.
 # BOOST
