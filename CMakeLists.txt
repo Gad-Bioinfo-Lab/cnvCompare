@@ -16,7 +16,6 @@ else()
 endif()
 
 
-
 # target_include_directories("src")
 add_executable(cnvCompare src/cnvCompare.cpp src/main.cpp src/utils.cpp)
 
