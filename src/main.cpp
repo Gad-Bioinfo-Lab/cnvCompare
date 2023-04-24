@@ -58,16 +58,20 @@ int main(int argc, char* argv[])
 	string inputFile;
 	string inputControlFile;
 	string logFile;
+	string dictFile; 
+	string suffix;
 
 
 	po::options_description desc("Allowed options");
 	desc.add_options()
 	("help,h", "produce help message")
-	("input,i",  po::value<string>( &inputFile ), "List of input file(s) containing detected CNV from samples" )
-	("control,c",  po::value<string>( &inputControlFile ), "List of input file(s) containing detected CNV from control" )
-	("filter,f", po::value<int>( &filterSize ), "Minimum size for a CNV to be counted (0)" )
-    ("whole,w" , "Whole mode. WARNING : Needs large amount of RAM" )
-	("vcf" , "VCF mode : input files are in VCF format according to vcf specification v4.7 (default)")
+	("input,i",  po::value<string>( &inputFile ), "List of input file(s) containing detected CNV from samples" 
+	("control,c",  po::value<string>( &inputControlFile ), "List of input file(s) containing detected CNV from control")
+	("filter,f", po::value<int>( &filterSize ), "Minimum size for a CNV to be counted (0)")
+    ("whole,w", "Whole mode. WARNING : Needs large amount of RAM")
+	("dict,d", po::value<string>( &dictFile ), "Dictionnary used to populate the chromosome list")
+	("suffix,s", po::value<string>( &suffix ), "Suffix to use for the output files (default : count")
+	("vcf", "VCF mode : input files are in VCF format according to vcf specification v4.7 (default)")
 	("bed", "BED mode : input files are in bed format + fields for cnv level and quality scores");
 
 
@@ -127,6 +131,11 @@ int main(int argc, char* argv[])
 	useVCFFormat = false; 
 	useBEDFormat = true;
   }
+
+  if (vm.count("suffix")) {
+	App->setSuffix(suffix); 
+  }
+
 
   App->setFormat(useVCFFormat , useBEDFormat);
 	
