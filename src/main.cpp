@@ -11,6 +11,14 @@
 
 // C++ Boost
 #include <boost/program_options.hpp>
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/sinks/text_file_backend.hpp>
+#include <boost/log/sources/severity_logger.hpp>
+#include <boost/log/sources/record_ostream.hpp>
 
 // utils
 #include "utils.h"
@@ -20,11 +28,25 @@
 
 
 using namespace std;
+using namespace boost;
 namespace po = boost::program_options;
+namespace logging = boost::log;
+namespace keywords = boost::log::keywords;
+namespace src = boost::log::sources;
+namespace sinks = boost::log::sinks;
+
+
+void init_logging() {
+	logging::add_file_log(keywords::file_name ="cnvCompare_%N.log" , keywords::format = "[%TimeStamp%]: %Message%");
+	logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::debug);
+	// cerr << "End of init logging" << logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::trace) << endl; 
+}
+
 
 int main(int argc, char* argv[])
 {
-  cerr << "Starting Main" << endl;
+	init_logging();
+  	BOOST_LOG_TRIVIAL(trace) << "Starting Main" << endl;
 
 	bool countStop = false;
 	bool useVCFFormat = true; 
@@ -124,6 +146,6 @@ int main(int argc, char* argv[])
 
 
 	delete App;
-	cerr << "end of main" << endl;
+	BOOST_LOG_TRIVIAL(trace) << "end of main" << endl;
   return 0;
 }

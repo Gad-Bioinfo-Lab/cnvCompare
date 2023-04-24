@@ -14,6 +14,12 @@
 #include <unordered_map>
 //#include <ranges>
 
+// Boost 
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/expressions.hpp>
+
+
 // utils
 #include "utils.h"
 
@@ -21,58 +27,83 @@
 #include "cnvCompare.h"
 
 using namespace std;
+using namespace boost;
+namespace logging = boost::log;
+
 
 cnvCompare::cnvCompare()
 {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cnvCompare default constructor" << endl;
   //
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cnvCompare default constructor" << endl;
 }
 
+
 cnvCompare::cnvCompare(string iF, int nT, int s) {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cnvCompare (string, int, int) Ctor" << endl;
+  BOOST_LOG_TRIVIAL(trace) <<  "cnvCompare constructor called";
+  BOOST_LOG_TRIVIAL(trace) <<  "sizeof( char ) = " << sizeof(char);
+  BOOST_LOG_TRIVIAL(trace) <<  "sizeof( string ) = " << sizeof(string);
+  BOOST_LOG_TRIVIAL(trace) <<  "sizeof( int32_t ) = " << sizeof(int32_t);
+  BOOST_LOG_TRIVIAL(trace) <<  "sizeof( int ) = " << sizeof(int);
+
   this->inputFile = iF;
   this->nbThread = nT;
   this->useControls = false;
   this->filterSize = s;
   int n = this->fillMap(iF, "sample");
-  cerr << n << " files added to sample list" << endl;
+  BOOST_LOG_TRIVIAL(info) << n << " files added to sample list" << endl;
   int ret = this->populateChr();
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cnvCompare (string, int, int) Ctor" << endl; 
 }
 
 cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cnvCompare (string, string, int, int) Ctor" << endl;
   this->inputFile = iF;
   this->controlFile = cF;
   this->nbThread = nT;
   this->useControls = true;
   this->filterSize = s;
   int n = this->fillMap(iF, "sample");
-  cerr << n << " files added to sample list" << endl;
+  BOOST_LOG_TRIVIAL(info) << n << " files added to sample list" << endl;
   int m = this->fillMap(cF, "control");
-  cerr << m << " files added to control list" << endl;
+  BOOST_LOG_TRIVIAL(info) << m << " files added to control list" << endl;
   int ret = this->populateChr();
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cnvCompare (string, string, int, int) Ctor" << endl;
 }
 
 void cnvCompare::mainLoop()
 {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::mainLoop " << endl;
   this->getData();
   this->computeCounts();
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::mainLoop " << endl;
 }
 
 // Alt loop : store all data for 1 chromosome and perform counts on it
 // need a huge amount of RAM.
 void cnvCompare::altLoop()
 {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::altLoop " << endl;
   for (auto &a : this->chromosomeMap)
   {
     this->getDataWhole(a);
     this->computeChrCounts(a);
     this->cleanData();
   }
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::altLoop " << endl;
 }
 
-void cnvCompare::cleanData() { this->dataByChr.clear(); }
+void cnvCompare::cleanData() { 
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cleanData " << endl;
+  this->dataByChr.clear();
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cleanData " << endl; 
+}
 
 void cnvCompare::getDataWhole(string incChr)
 {
-  cerr << "Gathering data for chr " << incChr << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getDataWhole " << endl;
+  BOOST_LOG_TRIVIAL(info) << "Gathering data for chr " << incChr << endl;
   string ligne;
   string ligneCNV;
   string mot;
@@ -103,7 +134,7 @@ void cnvCompare::getDataWhole(string incChr)
     struct timeval tbegin, tend;
     ligne = myIterA->first;
     ifstream cnvStream(ligne.c_str());
-    cerr << "\tReading file " << ligne << "\t" << endl;
+    BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << "\t" << endl;
     this->nbFile++;
     long nbLigneFile = 0;
     while (getline(cnvStream, ligneCNV))
@@ -163,21 +194,6 @@ void cnvCompare::getDataWhole(string incChr)
         value = 5;
       }
 
-
-      
-
-      // create the positions which don't exist
-      // for (long i = start; i <= end; i++)
-      // {
-      //   if (not((this->dataByChr[value]).count(i) > 0))
-      //   {
-      //     this->dataByChr[value].insert(std::pair{i, 0});
-      //   }
-      //   this->dataByChr[value][i]++;
-      // }
-      
-      // gettimeofday(&tbegin, NULL);
-
       for (long i = start; i <= end; i++)
       {
         int value_to_insert = 0; 
@@ -193,15 +209,17 @@ void cnvCompare::getDataWhole(string incChr)
 
 
     }
-    cerr << " with " << nbLigneFile << " events detected " << endl;
+    BOOST_LOG_TRIVIAL(info) << nbLigneFile << " events detected " << endl;
   }
-  cerr << "Ended with " << this->getNbFile() << " files" << endl;
+  BOOST_LOG_TRIVIAL(info) << "Ended with " << this->getNbFile() << " files" << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getDataWhole " << endl;
 }
 
 void cnvCompare::computeChrCounts(string incChr)
 {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeChrCounts " << endl;
   std::cout.precision(3);
-  cerr << "Computing counts for chr " << incChr << endl;
+  BOOST_LOG_TRIVIAL(info) << "Computing counts for chr " << incChr << endl;
   struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
@@ -227,11 +245,11 @@ void cnvCompare::computeChrCounts(string incChr)
       continue;
     }
     ifstream cnvStream(ligne.c_str());
-    cerr << "\tReading file " << ligne << endl;
+    BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << endl;
     // if "merged" isn't present in filename, renaming failed and rewrite the original file !
     // TO CORRECT
     string outFileName = pyReplace(ligne, "merged", "count");
-    cerr << "\t\tWriting in file " << outFileName << endl;
+    BOOST_LOG_TRIVIAL(info) << "\t\tWriting in file " << outFileName << endl;
     ofstream outStream;
 
     if (incChr == "chr1")
@@ -392,11 +410,13 @@ void cnvCompare::computeChrCounts(string incChr)
     outStream.close();
   }
   this->dataByChr.clear();
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeChrCounts " << endl;
 }
 
 // output a vector containing : chr start end type value from a BED line
 vector<string> cnvCompare::parseBEDLine(string incLine)
 {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::parseBEDLine " << endl;
   vector<string> output;
   string mot;
   short int i = 0;
@@ -428,11 +448,13 @@ vector<string> cnvCompare::parseBEDLine(string incLine)
     i++;
   }
   return output;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::parseBEDLine " << endl;
 }
 
 // output a vector containing : chr start end type value from a VCF line
 vector<string> cnvCompare::parseVCFLine(string incLine)
 {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::parseVCFLine " << endl;
   vector<string> output;
   map<string, string> temp;
   string mot;
@@ -484,13 +506,14 @@ vector<string> cnvCompare::parseVCFLine(string incLine)
   output.push_back(temp["END"]);
   output.push_back(temp["SVTYPE"]);
   output.push_back(temp["VALUE"]);
-
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::parseVCFLine " << endl;
   return output;
 }
 
 void cnvCompare::getData()
 {
-  cerr << "Gathering data" << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getData " << endl;
+  BOOST_LOG_TRIVIAL(info) << "Gathering data" << endl;
   struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
@@ -510,7 +533,7 @@ void cnvCompare::getData()
   {
     ligne = myIterA->first;
     ifstream cnvStream(ligne.c_str());
-    cerr << "\tReading file " << ligne << "\t";
+    BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << "\t";
     this->nbFile++;
     long nbLigneFile = 0;
     while (getline(cnvStream, ligneCNV))
@@ -563,14 +586,16 @@ void cnvCompare::getData()
       }
       this->data[chromosome][value][start].push_back(end);
     }
-    cerr << " with " << nbLigneFile << " events detected " << endl;
+    BOOST_LOG_TRIVIAL(info) << " with " << nbLigneFile << " events detected " << endl;
   }
-  cerr << "Ended with " << this->getNbFile() << " files" << endl;
+  BOOST_LOG_TRIVIAL(info) << "Ended with " << this->getNbFile() << " files" << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getData " << endl;
 }
 
 void cnvCompare::computeCounts()
 {
-  cerr << "Computing counts" << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeCounts " << endl;
+  BOOST_LOG_TRIVIAL(info) << "Computing counts" << endl;
   struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
@@ -595,9 +620,9 @@ void cnvCompare::computeCounts()
     }
 
     ifstream cnvStream(ligne.c_str());
-    cerr << "\tReading file " << ligne << endl;
+    BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << endl;
     string outFileName = pyReplace(ligne, "merged", "count");
-    cerr << "\t\tWriting in file " << outFileName << endl;
+    BOOST_LOG_TRIVIAL(info) << "\t\tWriting in file " << outFileName << endl;
     ofstream outStream;
     outStream.open(outFileName.c_str(), ios::out);
     while (getline(cnvStream, ligneCNV))
@@ -765,22 +790,32 @@ void cnvCompare::computeCounts()
 
     outStream.close();
   }
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeCounts " << endl;
 }
 
-short int cnvCompare::getNbFile() { return this->nbFile; }
+short int cnvCompare::getNbFile() { 
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getNbFile " << endl;
+  return this->nbFile; 
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getNbFile " << endl;
+}
 
 string cnvCompare::getInputFile()
 {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getInputFile " << endl;
   return this->inputFile;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getInputFile " << endl;
 }
 
 string cnvCompare::getControlFile()
 {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getControlFile " << endl;
   return this->controlFile;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getControlFile " << endl;
 }
 
 int cnvCompare::fillMap(string incFile, string status)
 {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::fillMap " << endl;
   ifstream allStream(incFile.c_str());
   string ligne;
   if (allStream)
@@ -788,10 +823,10 @@ int cnvCompare::fillMap(string incFile, string status)
     while (getline(allStream, ligne))
     {
       ifstream cnvStream(ligne.c_str());
-      cerr << "\tadding file " << ligne << " as " << status << endl;
+      BOOST_LOG_TRIVIAL(info) << "\tadding file " << ligne << " as " << status << endl;
       if (!IsFileReadable(ligne))
       {
-        cerr << "File provided as " << status << " : " << ligne << " is not accessible : passsing file" << endl;
+        BOOST_LOG_TRIVIAL(warning) << "File provided as " << status << " : " << ligne << " is not accessible : passsing file" << endl;
         continue;
       }
 
@@ -800,23 +835,29 @@ int cnvCompare::fillMap(string incFile, string status)
     }
   }
   return this->nbFile;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::fillMap " << endl;
 }
 
 int cnvCompare::getFilterSize()
 {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getFilterSize " << endl;
   return this->filterSize;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getFilterSize " << endl;
 }
 
 //
 
 void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice)
 {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::setFormat " << endl;
   this->useVCFFormat = incVCFChoice;
   this->useBEDFormat = incBEDChoice;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::setFormat " << endl;
 }
 
 string cnvCompare::getFormat()
 {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getFormat " << endl;
   if (this->useVCFFormat)
   {
     return "VCF";
@@ -825,10 +866,13 @@ string cnvCompare::getFormat()
   {
     return "BED";
   }
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getFormat " << endl;
 }
 
 int cnvCompare::populateChr() {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::populateChr " << endl;
   this->chromosomeMap.insert(this->chromosomeMap.end(), {"chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrX", "chrY"});
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::populateChr " << endl;
   return 0; 
 }
 
