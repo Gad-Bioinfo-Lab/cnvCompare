@@ -27,6 +27,8 @@ class cnvCompare
 		void setFormat(bool, bool);
 		std::vector<std::string> parseBEDLine(std::string);
 		std::vector<std::string> parseVCFLine(std::string);
+		void setSuffix(std::string);
+		std::string getSuffix(); 
 
 	private:
 		std::string inputFile;
@@ -42,6 +44,7 @@ class cnvCompare
 		bool useVCFFormat; 
 		bool useBEDFormat;
 		int populateChr(); 
+		std::string suffix;
 
 };
 #endif

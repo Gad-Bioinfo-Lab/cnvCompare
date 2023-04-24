@@ -61,6 +61,7 @@ cnvCompare::cnvCompare(string iF, int nT, int s) {
   this->nbThread = nT;
   this->useControls = false;
   this->filterSize = s;
+  this->suffix = "count";
   int n = this->fillMap(iF, "sample");
   BOOST_LOG_TRIVIAL(info) << n << " files added to sample list" << endl;
   int ret = this->populateChr();
@@ -87,6 +88,7 @@ cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
   this->nbThread = nT;
   this->useControls = true;
   this->filterSize = s;
+  this->suffix = "count";
   int n = this->fillMap(iF, "sample");
   BOOST_LOG_TRIVIAL(info) << n << " files added to sample list" << endl;
   int m = this->fillMap(cF, "control");
@@ -977,3 +979,25 @@ int cnvCompare::populateChr() {
   return 0; 
 }
 
+
+/**
+ * @brief Setter used to define the suffix to use
+ * @param incSuffix : string defining the suffix value
+ * @return none
+ **/
+void cnvCompare::setSuffix(string incSuffix) {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::setSuffix " << endl;
+  this->suffix = incSuffix;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::setSuffix " << endl;
+}
+
+/**
+ * @brief getter used to get the suffix to use
+ * @param incSuffix : string defining the suffix value
+ * @return none
+ **/
+string cnvCompare::getSuffix() {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getSuffix " << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getSuffix " << endl;
+  return this->suffix; 
+}
