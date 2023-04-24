@@ -97,13 +97,13 @@ int main(int argc, char* argv[])
 		if( !IsFileReadable( inputFile ) )
 		{
 			cerr << "File provided as input : " << inputFile << " is not accessible : stopping" << endl;
-			return -1;
+			return 1;
 		}
 	}
 	else
 	{
 		cerr << "No file provided as input file : stopping" << endl;
-		return -1;
+		return 1;
 	}
 
 	cnvCompare * App;
@@ -114,14 +114,14 @@ int main(int argc, char* argv[])
 		if( !IsFileReadable( inputControlFile ) )
 		{
 			cerr << "File provided as input : " << inputControlFile << " is not accessible : stopping" << endl;
-			return -1;
+			return 1;
 		}
 		App = new cnvCompare(inputFile, inputControlFile, 1, filterSize);
 	}
 	else
 	{
 		App = new cnvCompare(inputFile, 1, filterSize);
-		cerr << "No file provided as input control file" << endl;
+		BOOST_LOG_TRIVIAL(warning) << "No file provided as input control file" << endl;
 	}
 
 	
