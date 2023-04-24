@@ -48,18 +48,11 @@ int main(int argc, char* argv[])
 	init_logging();
   	BOOST_LOG_TRIVIAL(trace) << "Starting Main" << endl;
 
-	bool countStop = false;
 	bool useVCFFormat = true; 
 	bool useBEDFormat = false;
 
-	int currentThread = 0;
-	int depthThreshold;
-	int loggingLevel;
+	// int currentThread = 0;
 	int filterSize = 0;
-
-	double ratioThreshold;
-	double pvalueThreshold;
-
 
 	string inputFile;
 	string inputControlFile;
