@@ -54,6 +54,11 @@ cnvCompare::cnvCompare(string iF, int nT, int s) {
   int n = this->fillMap(iF, "sample");
   BOOST_LOG_TRIVIAL(info) << n << " files added to sample list" << endl;
   int ret = this->populateChr();
+  if (ret != 0) {
+    BOOST_LOG_TRIVIAL(error) << "Chromosome population couldn't be filled in" << endl;
+  }
+
+
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cnvCompare (string, int, int) Ctor" << endl; 
 }
 
@@ -69,6 +74,9 @@ cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
   int m = this->fillMap(cF, "control");
   BOOST_LOG_TRIVIAL(info) << m << " files added to control list" << endl;
   int ret = this->populateChr();
+  if (ret != 0) {
+    BOOST_LOG_TRIVIAL(error) << "Chromosome population couldn't be filled in" << endl;
+  }
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cnvCompare (string, string, int, int) Ctor" << endl;
 }
 
@@ -108,7 +116,6 @@ void cnvCompare::getDataWhole(string incChr)
   string ligneCNV;
   string mot;
   string header = "#";
-  int i = 0;
   string currentChr;
   string chromosome;
   string s_type;
@@ -131,7 +138,6 @@ void cnvCompare::getDataWhole(string incChr)
   map<string, string>::iterator myIterA;
   for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++)
   {
-    struct timeval tbegin, tend;
     ligne = myIterA->first;
     ifstream cnvStream(ligne.c_str());
     BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << "\t" << endl;
@@ -146,7 +152,6 @@ void cnvCompare::getDataWhole(string incChr)
         continue;
       }
 
-      // gettimeofday(&tbegin, NULL);
       vector<string> res;
       if (this->getFormat() == "BED")
       {
@@ -156,8 +161,7 @@ void cnvCompare::getDataWhole(string incChr)
       {
         res = this->parseVCFLine(ligneCNV);
       }
-      // gettimeofday(&tend, NULL);
-      // ExecMeasure(tbegin, tend, "Line parsing for " + this->getFormat());
+      
 
       // type conversion
       chromosome = res[0];
@@ -203,11 +207,6 @@ void cnvCompare::getDataWhole(string incChr)
         }
         this->dataByChr[value].insert_or_assign(i, value_to_insert);
       }
-      // gettimeofday(&tend, NULL);
-      // ExecMeasure(tbegin, tend, "Reading event " + chromosome + ":" + int_to_string(start) + "-" + int_to_string(end) + " ; size : " + int_to_string(end-start));
-
-
-
     }
     BOOST_LOG_TRIVIAL(info) << nbLigneFile << " events detected " << endl;
   }
@@ -220,7 +219,7 @@ void cnvCompare::computeChrCounts(string incChr)
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeChrCounts " << endl;
   std::cout.precision(3);
   BOOST_LOG_TRIVIAL(info) << "Computing counts for chr " << incChr << endl;
-  struct timeval tbegin, tend;
+  // struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
   string mot;
@@ -237,7 +236,7 @@ void cnvCompare::computeChrCounts(string incChr)
   map<string, string>::iterator myIterA;
   for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++)
   {
-    struct timeval tbegin, tend;
+    // struct timeval tbegin, tend;
     ligne = myIterA->first;
     string s = myIterA->second;
     if (s == "control")
@@ -301,19 +300,14 @@ void cnvCompare::computeChrCounts(string incChr)
         continue;
       }
 
-
       // pass if not del or dup
-      // verifier la condition : a priori les BND et INV passent à travers
-      // cerr << "DEBUG : s_type = " << s_type << endl;
-
+      BOOST_LOG_TRIVIAL(debug) << "s_type = " << s_type << endl;
       if ((s_type != "DUP") && (s_type != "DEL"))
       {
         outStream << ligneCNV << endl;
         continue;
       }
 
-      
-      // gettimeofday(&tbegin, NULL);
       // counts 
       double total = 0;
       for (long i = start; i <= end; i++)
@@ -321,10 +315,7 @@ void cnvCompare::computeChrCounts(string incChr)
         total += (double)(this->dataByChr[value][i]);
       }
       double mean = total / (double)((end-start)+1);
-      // gettimeofday(&tend, NULL);
-      // ExecMeasure(tbegin, tend, "Counting event " + chromosome + ":" + int_to_string(start) + "-" + int_to_string(end) + " ; size : " + int_to_string(end-start));
 
-      // gettimeofday(&tbegin, NULL);
       // need to adapt the output according to the choosen format
       if (this->getFormat() == "BED")
       {
@@ -514,12 +505,11 @@ void cnvCompare::getData()
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getData " << endl;
   BOOST_LOG_TRIVIAL(info) << "Gathering data" << endl;
-  struct timeval tbegin, tend;
+  // struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
   string mot;
   string header = "#";
-  int i = 0;
   string currentChr;
   string chromosome;
   string s_type;
@@ -596,7 +586,7 @@ void cnvCompare::computeCounts()
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeCounts " << endl;
   BOOST_LOG_TRIVIAL(info) << "Computing counts" << endl;
-  struct timeval tbegin, tend;
+  // struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
   string mot;
