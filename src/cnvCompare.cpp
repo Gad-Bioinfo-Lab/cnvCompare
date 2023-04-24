@@ -30,7 +30,11 @@ using namespace std;
 using namespace boost;
 namespace logging = boost::log;
 
-
+/**
+ * @brief default constructor (useless)
+ * @param none
+ * @return none
+ **/
 cnvCompare::cnvCompare()
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cnvCompare default constructor" << endl;
@@ -38,7 +42,13 @@ cnvCompare::cnvCompare()
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cnvCompare default constructor" << endl;
 }
 
-
+/**
+ * @brief Constructor of the class without controls
+ * @param iF file containing the list of input files
+ * @param iF number of threads 
+ * @param s size of the filter to apply
+ * @return none
+ **/
 cnvCompare::cnvCompare(string iF, int nT, int s) {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cnvCompare (string, int, int) Ctor" << endl;
   BOOST_LOG_TRIVIAL(trace) <<  "cnvCompare constructor called";
@@ -62,6 +72,14 @@ cnvCompare::cnvCompare(string iF, int nT, int s) {
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cnvCompare (string, int, int) Ctor" << endl; 
 }
 
+/**
+ * @brief Constructor of the class with controls
+ * @param iF file containing the list of input files
+ * @param cF file containing the list of control files
+ * @param iF number of threads 
+ * @param s size of the filter to apply
+ * @return none
+ **/
 cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cnvCompare (string, string, int, int) Ctor" << endl;
   this->inputFile = iF;
@@ -80,6 +98,12 @@ cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cnvCompare (string, string, int, int) Ctor" << endl;
 }
 
+
+/**
+ * @brief Main loop used to get data, and compute counts on the whole genome ; need huge amounts of RAM
+ * @param none
+ * @return none
+ **/
 void cnvCompare::mainLoop()
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::mainLoop " << endl;
@@ -88,8 +112,11 @@ void cnvCompare::mainLoop()
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::mainLoop " << endl;
 }
 
-// Alt loop : store all data for 1 chromosome and perform counts on it
-// need a huge amount of RAM.
+/**
+ * @brief Alt loop used to get data, and compute counts chr by chr
+ * @param none
+ * @return none
+ **/
 void cnvCompare::altLoop()
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::altLoop " << endl;
@@ -102,12 +129,23 @@ void cnvCompare::altLoop()
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::altLoop " << endl;
 }
 
+/**
+ * @brief Method used to emptying data for the chromosomes
+ * @param none
+ * @return none
+ **/
 void cnvCompare::cleanData() { 
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cleanData " << endl;
   this->dataByChr.clear();
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cleanData " << endl; 
 }
 
+/**
+ * @brief Method used to collect data from input files
+ * @param incChr the chr to filter
+ * @return none
+ * @todo Need to clarify which method is used chr by chr, actually the 2 loops are using the chr by chr algo... 
+ **/
 void cnvCompare::getDataWhole(string incChr)
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getDataWhole " << endl;
@@ -214,6 +252,13 @@ void cnvCompare::getDataWhole(string incChr)
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getDataWhole " << endl;
 }
 
+
+/**
+ * @brief Method used to commpute counts from in memory data chr by chr
+ * @param incChr the chr to filter
+ * @return none
+ * @todo Need to clarify which method is used chr by chr, actually the 2 loops are using the chr by chr algo... 
+ **/
 void cnvCompare::computeChrCounts(string incChr)
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeChrCounts " << endl;
@@ -404,6 +449,13 @@ void cnvCompare::computeChrCounts(string incChr)
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeChrCounts " << endl;
 }
 
+
+/**
+ * @brief Method used to parse a line from a BED file
+ * @param incLine the line to parse
+ * @return vector<string> containing values : chr, start, end, type, value
+ * @todo need to check that all the values are present
+ **/
 // output a vector containing : chr start end type value from a BED line
 vector<string> cnvCompare::parseBEDLine(string incLine)
 {
@@ -442,7 +494,13 @@ vector<string> cnvCompare::parseBEDLine(string incLine)
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::parseBEDLine " << endl;
 }
 
-// output a vector containing : chr start end type value from a VCF line
+
+/**
+ * @brief Method used to parse a line from a VCF file
+ * @param incLine the line to parse
+ * @return vector<string> containing values : chr, start, end, type, value
+ * @todo need to check that all the values are present
+ **/
 vector<string> cnvCompare::parseVCFLine(string incLine)
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::parseVCFLine " << endl;
@@ -501,6 +559,12 @@ vector<string> cnvCompare::parseVCFLine(string incLine)
   return output;
 }
 
+/**
+ * @brief Method used to collect data from input files : chr by chr mode
+ * @param none
+ * @return none
+ * @todo Need to clarify which method is used chr by chr, actually the 2 loops are using the chr by chr algo... 
+ **/
 void cnvCompare::getData()
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getData " << endl;
@@ -582,6 +646,12 @@ void cnvCompare::getData()
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getData " << endl;
 }
 
+/**
+ * @brief Method used to commpute counts from in memory data on the whole genome
+ * @param none
+ * @return none
+ * @todo Need to clarify which method is used chr by chr, actually the 2 loops are using the chr by chr algo... 
+ **/
 void cnvCompare::computeCounts()
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeCounts " << endl;
@@ -783,12 +853,22 @@ void cnvCompare::computeCounts()
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeCounts " << endl;
 }
 
+/**
+ * @brief Getter for the number of input files
+ * @param none
+ * @return integer value : the number of file from the instance of the cnvCompare class
+ **/
 short int cnvCompare::getNbFile() { 
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getNbFile " << endl;
   return this->nbFile; 
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getNbFile " << endl;
 }
 
+/**
+ * @brief Getter for the name of the input file list
+ * @param none
+ * @return string value : the name of the input file list
+ **/
 string cnvCompare::getInputFile()
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getInputFile " << endl;
@@ -796,6 +876,11 @@ string cnvCompare::getInputFile()
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getInputFile " << endl;
 }
 
+/**
+ * @brief Getter for the name of the control file list
+ * @param none
+ * @return string value : the name of the control file list
+ **/
 string cnvCompare::getControlFile()
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getControlFile " << endl;
@@ -803,6 +888,12 @@ string cnvCompare::getControlFile()
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getControlFile " << endl;
 }
 
+/**
+ * @brief Method used to fill the file map
+ * @param incFile : string value : the path to the file containing a list of  files 
+ * @param status : string value : precising if the files are controls or inputs
+ * @return int value : a return code : 0 if ok, > 0 if not ok
+ **/
 int cnvCompare::fillMap(string incFile, string status)
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::fillMap " << endl;
@@ -828,6 +919,11 @@ int cnvCompare::fillMap(string incFile, string status)
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::fillMap " << endl;
 }
 
+/**
+ * @brief Getter for filter size value
+ * @param none
+ * @return int value : the filter size value
+ **/
 int cnvCompare::getFilterSize()
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getFilterSize " << endl;
@@ -835,8 +931,12 @@ int cnvCompare::getFilterSize()
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getFilterSize " << endl;
 }
 
-//
-
+/**
+ * @brief Setter for the file format
+ * @param incVCFChoice A boolean indicating if the files are in VCF format
+ * @param incBEDChoice A boolean indicating if the files are in BED format
+ * @return none
+ **/
 void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice)
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::setFormat " << endl;
@@ -845,6 +945,11 @@ void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice)
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::setFormat " << endl;
 }
 
+/**
+ * @brief Getter for the file formate
+ * @param none
+ * @return string value : the file format
+ **/
 string cnvCompare::getFormat()
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getFormat " << endl;
@@ -859,6 +964,12 @@ string cnvCompare::getFormat()
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getFormat " << endl;
 }
 
+/**
+ * @brief Method used to populate the chromosome map
+ * @param none
+ * @return int value : a return code : 0 if ok, > 0 if not ok
+ * @todo Need to deal with non human genomes
+ **/
 int cnvCompare::populateChr() {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::populateChr " << endl;
   this->chromosomeMap.insert(this->chromosomeMap.end(), {"chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrX", "chrY"});
