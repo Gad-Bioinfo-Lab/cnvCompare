@@ -135,7 +135,9 @@ int main(int argc, char* argv[])
   if (vm.count("suffix")) {
 	App->setSuffix(suffix); 
   }
-
+  if (vm.count("dict")) {
+	App->setDict(ditcFile); 
+  }
 
   App->setFormat(useVCFFormat , useBEDFormat);
 	
