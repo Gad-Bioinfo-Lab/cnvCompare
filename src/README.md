@@ -43,7 +43,7 @@ cnvCompare -i </path/to/the/file/list> --vcf/--bed
         --vcf : Input files are in VCF format 
         --bed : Input files are in BED format
         -s, --suffix <string>: The suffix used to name the ouput files
-            The output files are written in the same path of the input file, adding this suffix in their names before the extension (.vcf or .bed or anyhting else) (default : "counts")
+            The output files are written in the same path of the input file, adding this suffix in their names before the extension (.vcf or .bed or anyhting else) (default : "count")
         
 You need to provide only 2 mandatory options : the input file list and the file format
 
