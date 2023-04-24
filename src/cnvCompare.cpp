@@ -993,11 +993,33 @@ void cnvCompare::setSuffix(string incSuffix) {
 
 /**
  * @brief getter used to get the suffix to use
- * @param incSuffix : string defining the suffix value
- * @return none
+ * @param none
+ * @return string value : defining the suffix value
  **/
 string cnvCompare::getSuffix() {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getSuffix " << endl;
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getSuffix " << endl;
   return this->suffix; 
+}
+
+/**
+ * @brief Setter used to define the dict file to use to populate the chromosome map
+ * @param incDictFile : string defining the dict file path
+ * @return none
+ **/
+void cnvCompare::setDictFile(string incDictFile) {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::setDictFile " << endl;
+  this->dictFile = incDictFile;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::setDictFile " << endl;
+}
+
+/**
+ * @brief getter used to get the dict file to use
+ * @param none
+ * @return string value defining the dict file
+ **/
+string cnvCompare::getDictFile() {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getDictFile " << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getDictFile " << endl;
+  return this->dictFile; 
 }
