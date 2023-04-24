@@ -43,6 +43,7 @@ void init_logging() {
 }
 
 
+
 int main(int argc, char* argv[])
 {
 	init_logging();
