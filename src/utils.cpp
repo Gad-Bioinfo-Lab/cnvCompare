@@ -28,7 +28,7 @@ void ExecMeasure( struct timeval begin , struct timeval end , string operation )
 {
 	
 	string unit = "µs";
-	if ((end.tv_usec - begin.tv_usec) > sizeof(long)) {
+	if ((end.tv_usec - begin.tv_usec) < 0) {
 		end.tv_usec /= 1000; 
 		begin.tv_usec /= 1000;
 		unit = "ms";
@@ -219,7 +219,7 @@ double moyenne_calculator( vector<double> incVector )
 {
 	// Déclarations
 	double temp_value;
-	double sumone;
+	double sumone = 0.0;
 	double moyenne;
 	int number = 0;
 
