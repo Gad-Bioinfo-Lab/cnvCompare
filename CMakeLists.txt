@@ -15,12 +15,27 @@ else()
     message (FATAL_ERROR "Cannot find Boost")
 endif()
 
+find_package(Boost 1.46.1 REQUIRED COMPONENTS log)
+# check if boost was found
+if(Boost_FOUND)
+    message ("boost found")
+else()
+    message (FATAL_ERROR "Cannot find Boost")
+endif()
+
+find_package(Boost 1.46.1 REQUIRED COMPONENTS log_setup)
+# check if boost was found
+if(Boost_FOUND)
+    message ("boost found")
+else()
+    message (FATAL_ERROR "Cannot find Boost")
+endif()
+
 
 # target_include_directories("src")
 add_executable(cnvCompare src/cnvCompare.cpp src/main.cpp src/utils.cpp)
 
 # link against the boost libraries
-target_link_libraries( cnvCompare
-    PRIVATE
-        Boost::program_options
-)
+target_link_libraries(cnvCompare PRIVATE Boost::program_options)
+target_link_libraries(cnvCompare PRIVATE Boost::log)
+target_link_libraries(cnvCompare PRIVATE Boost::log_setup)
