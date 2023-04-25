@@ -80,6 +80,7 @@ int main(int argc, char* argv[])
 	po::options_description desc("Allowed options");
 	desc.add_options()
 	("help,h", "produce help message")
+	("version,v", "Print version and exit")
 	("input,i",  po::value<string>( &inputFile ), "List of input file(s) containing detected CNV from samples")
 	("control,c",  po::value<string>( &inputControlFile ), "List of input file(s) containing detected CNV from control")
 	("filter,f", po::value<int>( &filterSize ), "Minimum size for a CNV to be counted (0)")
@@ -102,6 +103,21 @@ int main(int argc, char* argv[])
 		cerr << desc << "\n";
 		return 1;
 	}
+
+	if (vm.count("help")) {
+		cerr << desc << "\n";
+		return 0;
+	}
+
+	if (vm.count("version")) {
+		cerr << "cnvCompare : comparing and counting CNV's detected by sequencing experiments" << endl; 
+		cerr << "Version 1.5.0" << endl; 
+		cerr << "WARNING : do not use in diagnostics, results are not guaranteed" << endl;
+		cerr << "Author : <yannis.duffourd@u-bourgogne.fr> - INSERM U1231 GAD - CHU Dijon" << endl; 
+		cerr << "Copyright (c) 2022 GAD Lab under the aGPL v3 License" << endl;
+		return 0;
+	}
+
 
 
 	// check provided files
