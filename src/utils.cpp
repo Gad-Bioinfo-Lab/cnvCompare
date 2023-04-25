@@ -69,14 +69,13 @@ string int_to_string( int incoming )
 	return result;
 }
 
-string pyReplace( string incoming , string pattern , string replacement )
-{
-	while (incoming.rfind( pattern ) != string::npos )
+string pyReplace(string incoming, string pattern, string replacement) {
+	if (incoming.rfind(pattern) != string::npos)
 	{
-		int n = incoming.rfind( pattern );
+		int n = incoming.rfind(pattern);
 		int l = pattern.length();
 
-		incoming.replace( n , l , replacement );
+		incoming.replace(n, l, replacement);
 	}
 	return incoming;
 }
