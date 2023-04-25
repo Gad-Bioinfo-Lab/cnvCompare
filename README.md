@@ -26,6 +26,7 @@ cmake .
 make  
 
 ## Usage 
+```
 cnvCompare -i </path/to/the/file/list> --vcf/--bed  
    Allowed options :   
       -h, --help : displaying help  
@@ -43,19 +44,22 @@ cnvCompare -i </path/to/the/file/list> --vcf/--bed
       --bed : Input files are in BED format  
       -s, --suffix <string>: The suffix used to name the ouput files  
          The output files are written in the same path of the input file, adding this suffix in their names before the extension (.vcf or .bed or anyhting else) (default : "count")  
+```
 You need to provide only 2 mandatory options : the input file list and the file format
 
 examples :  
+```
    cnvCompare -i inputFile.list --vcf  
    cnvCompare -i inputFile.list -c controlFile.list -w --vcf -d /path/to/genome.dict -s "counted" 
+```
 
 The input file format is one path to a single file on a line, the control file format is the same.  
-example :   
+example : 
+```  
    /path/to/the/file/one.vcf  
    /path/to/the/file/two.vcf  
    /path/to/the/file/three.vcf  
-
-
+```
 
 ## Found a Bug ? 
 Please search for any existing issues to avoid duplicate submission.  
