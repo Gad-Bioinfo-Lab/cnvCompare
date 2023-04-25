@@ -13,11 +13,11 @@ class cnvCompare
 		cnvCompare(std::string , std::string, int, int);
 		void mainLoop();
 		void altLoop();
-		void getData();
+		void getDataWhole();
+		void getDatabyChr(std::string);
+		void computeCountsWhole();
+		void computeCountsbyChr(std::string);
 		void cleanData();
-		void getDataWhole(std::string);
-		void computeCounts();
-		void computeChrCounts(std::string);
 		short int getNbFile();
 		int fillMap(std::string, std::string); 
 		std::string getControlFile();
@@ -36,7 +36,7 @@ class cnvCompare
 		std::string inputFile;
 		std::string controlFile;
 		int nbThread;
-		std::map< std::string , std::map< unsigned int , std::map< long , std::vector< long > > > > data;
+		std::unordered_map< std::string , std::unordered_map< unsigned int , std::unordered_map<long, short> > > data;
 		std::unordered_map<unsigned int , std::unordered_map<long, short> > dataByChr;
 		std::vector<std::string> chromosomeMap ;
 		short int nbFile = 0;
