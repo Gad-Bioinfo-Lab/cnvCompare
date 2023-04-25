@@ -1,3 +1,4 @@
+#define BOOST_LOG_DYN_LINK 1
 // C++ std libs
 #include <iostream>
 #include <iomanip>
@@ -12,13 +13,14 @@
 #include <vector>
 #include <iomanip>
 #include <unordered_map>
+#include <filesystem>
 //#include <ranges>
 
 // Boost 
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/log/expressions.hpp>
-
+#include <boost/filesystem/path.hpp>
 
 // utils
 #include "utils.h"
@@ -29,6 +31,7 @@
 using namespace std;
 using namespace boost;
 namespace logging = boost::log;
+namespace fs = boost::filesystem;
 
 /**
  * @brief default constructor (useless)
@@ -102,32 +105,32 @@ cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
 
 
 /**
- * @brief Main loop used to get data, and compute counts on the whole genome ; need huge amounts of RAM
+ * @brief Main loop used to get data, and compute counts chr by chr
  * @param none
  * @return none
  **/
 void cnvCompare::mainLoop()
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::mainLoop " << endl;
-  this->getData();
-  this->computeCounts();
+  for (auto &a : this->chromosomeMap)
+  {
+    this->getDatabyChr(a);
+    this->computeCountsbyChr(a);
+    this->cleanData();
+  }
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::mainLoop " << endl;
 }
 
 /**
- * @brief Alt loop used to get data, and compute counts chr by chr
+ * @brief Alt loop used to get data, and compute counts on the whole genome ; needs huge amount of RAM
  * @param none
  * @return none
  **/
 void cnvCompare::altLoop()
 {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::altLoop " << endl;
-  for (auto &a : this->chromosomeMap)
-  {
-    this->getDataWhole(a);
-    this->computeChrCounts(a);
-    this->cleanData();
-  }
+  this->getDataWhole();
+  this->computeCountsWhole();
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::altLoop " << endl;
 }
 
@@ -146,11 +149,10 @@ void cnvCompare::cleanData() {
  * @brief Method used to collect data from input files
  * @param incChr the chr to filter
  * @return none
- * @todo Need to clarify which method is used chr by chr, actually the 2 loops are using the chr by chr algo... 
  **/
-void cnvCompare::getDataWhole(string incChr)
+void cnvCompare::getDatabyChr(string incChr)
 {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getDataWhole " << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getDatabyChr " << endl;
   BOOST_LOG_TRIVIAL(info) << "Gathering data for chr " << incChr << endl;
   string ligne;
   string ligneCNV;
@@ -251,7 +253,7 @@ void cnvCompare::getDataWhole(string incChr)
     BOOST_LOG_TRIVIAL(info) << nbLigneFile << " events detected " << endl;
   }
   BOOST_LOG_TRIVIAL(info) << "Ended with " << this->getNbFile() << " files" << endl;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getDataWhole " << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getDatabyChr " << endl;
 }
 
 
@@ -259,11 +261,10 @@ void cnvCompare::getDataWhole(string incChr)
  * @brief Method used to commpute counts from in memory data chr by chr
  * @param incChr the chr to filter
  * @return none
- * @todo Need to clarify which method is used chr by chr, actually the 2 loops are using the chr by chr algo... 
  **/
-void cnvCompare::computeChrCounts(string incChr)
+void cnvCompare::computeCountsbyChr(string incChr)
 {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeChrCounts " << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeCountsbyChr " << endl;
   std::cout.precision(3);
   BOOST_LOG_TRIVIAL(info) << "Computing counts for chr " << incChr << endl;
   // struct timeval tbegin, tend;
@@ -278,6 +279,7 @@ void cnvCompare::computeChrCounts(string incChr)
   string s_start;
   string s_end;
   string s_value;
+  string outFileName;
 
   // tsv parsing
   map<string, string>::iterator myIterA;
@@ -292,9 +294,20 @@ void cnvCompare::computeChrCounts(string incChr)
     }
     ifstream cnvStream(ligne.c_str());
     BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << endl;
-    // if "merged" isn't present in filename, renaming failed and rewrite the original file !
-    // TO CORRECT
-    string outFileName = pyReplace(ligne, "merged", "count");
+
+    fs::path pathObj(ligne);
+    if (pathObj.has_extension()) {
+      string extension = pathObj.extension().string(); 
+      BOOST_LOG_TRIVIAL(debug) << "Extension detected : " << extension << endl;
+      outFileName = pyReplace(ligne, extension, "." + this->getSuffix() + extension);
+    } else {
+      outFileName = ligne + "." + this->getSuffix();
+    }
+    if (outFileName == ligne) {
+      BOOST_LOG_TRIVIAL(error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution" << endl;
+      exit(1);
+    }
+
     BOOST_LOG_TRIVIAL(info) << "\t\tWriting in file " << outFileName << endl;
     ofstream outStream;
 
@@ -348,7 +361,7 @@ void cnvCompare::computeChrCounts(string incChr)
       }
 
       // pass if not del or dup
-      BOOST_LOG_TRIVIAL(debug) << "s_type = " << s_type << endl;
+      BOOST_LOG_TRIVIAL(trace) << "s_type = " << s_type << endl;
       if ((s_type != "DUP") && (s_type != "DEL"))
       {
         outStream << ligneCNV << endl;
@@ -448,7 +461,7 @@ void cnvCompare::computeChrCounts(string incChr)
     outStream.close();
   }
   this->dataByChr.clear();
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeChrCounts " << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeCountsbyChr " << endl;
 }
 
 
@@ -562,14 +575,13 @@ vector<string> cnvCompare::parseVCFLine(string incLine)
 }
 
 /**
- * @brief Method used to collect data from input files : chr by chr mode
+ * @brief Method used to collect data from input files : Whole mode
  * @param none
  * @return none
- * @todo Need to clarify which method is used chr by chr, actually the 2 loops are using the chr by chr algo... 
  **/
-void cnvCompare::getData()
+void cnvCompare::getDataWhole()
 {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getData " << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getDataWhole " << endl;
   BOOST_LOG_TRIVIAL(info) << "Gathering data" << endl;
   // struct timeval tbegin, tend;
   string ligne;
@@ -630,9 +642,9 @@ void cnvCompare::getData()
 
       if (!(this->data.count(chromosome) > 0))
       {
-        map<unsigned int, map<long, vector<long>>> tempMap;
+        unordered_map<unsigned int, unordered_map<long, short>> tempMap;
         this->data[chromosome] = tempMap;
-        map<long, vector<long>> tempMap2;
+        unordered_map<long, short> tempMap2;
         this->data[chromosome][0] = tempMap2;
         this->data[chromosome][1] = tempMap2;
         this->data[chromosome][2] = tempMap2;
@@ -640,23 +652,30 @@ void cnvCompare::getData()
         this->data[chromosome][4] = tempMap2;
         this->data[chromosome][5] = tempMap2;
       }
-      this->data[chromosome][value][start].push_back(end);
+      for (long i = start; i <= end; i++)
+      {
+        int value_to_insert = 0; 
+        if ((this->data[chromosome][value]).find(i) != (this->data[chromosome][value]).end())
+        {
+          value_to_insert += this->data[chromosome][value][i] + 1; 
+        }
+        this->data[chromosome][value].insert_or_assign(i, value_to_insert);
+      }
     }
     BOOST_LOG_TRIVIAL(info) << " with " << nbLigneFile << " events detected " << endl;
   }
   BOOST_LOG_TRIVIAL(info) << "Ended with " << this->getNbFile() << " files" << endl;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getData " << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getDataWhole " << endl;
 }
 
 /**
  * @brief Method used to commpute counts from in memory data on the whole genome
  * @param none
  * @return none
- * @todo Need to clarify which method is used chr by chr, actually the 2 loops are using the chr by chr algo... 
  **/
-void cnvCompare::computeCounts()
+void cnvCompare::computeCountsWhole()
 {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeCounts " << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeCountsWhole " << endl;
   BOOST_LOG_TRIVIAL(info) << "Computing counts" << endl;
   // struct timeval tbegin, tend;
   string ligne;
@@ -670,6 +689,7 @@ void cnvCompare::computeCounts()
   string s_start;
   string s_end;
   string s_value;
+  string outFileName;
 
   map<string, string>::iterator myIterA;
   for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++)
@@ -682,8 +702,23 @@ void cnvCompare::computeCounts()
     }
 
     ifstream cnvStream(ligne.c_str());
+
     BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << endl;
-    string outFileName = pyReplace(ligne, "merged", "count");
+    fs::path pathObj(ligne);
+    if (pathObj.has_extension()) {
+      string extension = pathObj.extension().string(); 
+      BOOST_LOG_TRIVIAL(trace) << "Extension detected : " << extension << endl;
+      BOOST_LOG_TRIVIAL(trace) << "Suffix is : " << this->getSuffix() << endl;
+      outFileName = pyReplace(ligne, extension, ("." + this->getSuffix() + extension));
+      BOOST_LOG_TRIVIAL(trace) << "outFileName is : " << outFileName << endl;
+    } else {
+      outFileName = ligne + "." + this->getSuffix();
+    }
+    if (outFileName == ligne) {
+      BOOST_LOG_TRIVIAL(error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution" << endl;
+      exit(1);
+    }
+
     BOOST_LOG_TRIVIAL(info) << "\t\tWriting in file " << outFileName << endl;
     ofstream outStream;
     outStream.open(outFileName.c_str(), ios::out);
@@ -711,11 +746,7 @@ void cnvCompare::computeCounts()
       // type conversion
       chromosome = res[0];
       s_type = res[3];
-
-      // pass if not del or dup
-      // verifier la condition : a priori les BND et INV passent à travers
-      // cerr << "DEBUG : s_type = " << s_type << endl;
-
+      BOOST_LOG_TRIVIAL(trace) << "s_type = " << s_type << endl;
       if ((s_type != "DUP") && (s_type != "DEL"))
       {
         outStream << ligneCNV << endl;
@@ -730,46 +761,14 @@ void cnvCompare::computeCounts()
       {
         value = 5;
       }
+
       // counts
-      map<long, short int> counts;
-      map<long, vector<long>> tmpMap;
-      tmpMap = this->data[chromosome][value];
-      // init data counts
-      for (long j = start; j <= end; j++)
+      double total = 0;
+      for (long i = start; i <= end; i++)
       {
-        counts[j] = 0;
+        total += (double)(this->data[chromosome][value][i]);
       }
-      // get pair of iterators on range of intervals including the start point
-      auto lb = tmpMap.lower_bound(start);
-      auto ub = tmpMap.upper_bound(end);
-      // cerr << "\t\t\tGet range of starts from : \n";
-      map<long, vector<long>>::iterator myIterC;
-      for (myIterC = lb; myIterC != ub; myIterC++)
-      {
-        vector<long>::iterator myIterD;
-        for (myIterD = (myIterC->second).begin();
-             myIterD != (myIterC->second).end(); myIterD++)
-        {
-          // cerr <<  "\t\t\t\t" << myIterC->first << " to " << *myIterD <<
-          // endl;
-          long i = myIterC->first;
-          while (i <= *myIterD)
-          {
-            if (i > end)
-            {
-              break;
-            }
-            counts[i]++;
-            i++;
-          }
-        }
-      }
-      vector<double> m;
-      for (auto &s : counts)
-      {
-        m.push_back((double)(s.second));
-      }
-      double mean = moyenne_calculator(m);
+      double mean = total / (double)((end-start)+1);
 
       // need to adapt the output according to the choosen format
       if (this->getFormat() == "BED")
@@ -852,7 +851,7 @@ void cnvCompare::computeCounts()
 
     outStream.close();
   }
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeCounts " << endl;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeCountsWhole " << endl;
 }
 
 /**
