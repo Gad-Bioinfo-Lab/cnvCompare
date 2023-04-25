@@ -27,34 +27,33 @@ make
 
 ## Usage 
 cnvCompare -i </path/to/the/file/list> --vcf/--bed  
-    Allowed options :   
-        -h, --help : displaying help  
-        -i, --input <string>: List of input file(s) containing detected CNV from samples (prefer absolute path)  
-        These files will be all rewritten using the suffix provided including the counts for each DEL/DUP events  
-        -c, --control <string>: List of control file(s) containing detected CNV from samples (prefer absolute path)  
-        These files wont be rewritten but events contained will be counted  
-        -f, --filter <int>: apply a filter on the CNV size to be counted (default:0)  
-        Currently not yet implemented  
-        -w, --whole : Using the whole mode, counting on the whole genome  
-        Faster but need large amounts of RAM, depending on the size of the events, and the number of samples.  
-        By default, if this option is not activated, the counts are realised chromosome by chromosome  
-        -d, --dict <string>: Path to the dictionnary file used to populate the chomosome list  
-        Mainly used for non-human genomes, if not provided will used chromosomes : [1-22],X,Y,MT/M  
-        --vcf : Input files are in VCF format  
-        --bed : Input files are in BED format  
-        -s, --suffix <string>: The suffix used to name the ouput files  
-        The output files are written in the same path of the input file, adding this suffix in their names before the extension (.vcf or .bed or anyhting else) (default : "count")  
+   Allowed options :   
+      -h, --help : displaying help  
+      -i, --input <string>: List of input file(s) containing detected CNV from samples (prefer absolute path)  
+         These files will be all rewritten using the suffix provided including the counts for each DEL/DUP events  
+      -c, --control <string>: List of control file(s) containing detected CNV from samples (prefer absolute path)  
+         These files wont be rewritten but events contained will be counted  
+      -f, --filter <int>: apply a filter on the CNV size to be counted (default:0)  
+      -w, --whole : Using the whole mode, counting on the whole genome  
+         Faster but need large amounts of RAM, depending on the size of the events, and the number of samples.  
+         By default, if this option is not activated, the counts are realised chromosome by chromosome  
+      -d, --dict <string>: Path to the dictionnary file used to populate the chomosome list  
+         Mainly used for non-human genomes, if not provided will used chromosomes : [1-22],X,Y,MT/M  
+      --vcf : Input files are in VCF format  
+      --bed : Input files are in BED format  
+      -s, --suffix <string>: The suffix used to name the ouput files  
+         The output files are written in the same path of the input file, adding this suffix in their names before the extension (.vcf or .bed or anyhting else) (default : "count")  
 You need to provide only 2 mandatory options : the input file list and the file format
 
 examples :  
-    cnvCompare -i inputFile.list --vcf  
-    cnvCompare -i inputFile.list -c controlFile.list -w --vcf -d /path/to/genome.dict -s "counted" 
+   cnvCompare -i inputFile.list --vcf  
+   cnvCompare -i inputFile.list -c controlFile.list -w --vcf -d /path/to/genome.dict -s "counted" 
 
 The input file format is one path to a single file on a line, the control file format is the same.  
 example :   
-    /path/to/the/file/one.vcf  
-    /path/to/the/file/two.vcf  
-    /path/to/the/file/three.vcf  
+   /path/to/the/file/one.vcf  
+   /path/to/the/file/two.vcf  
+   /path/to/the/file/three.vcf  
 
 
 
