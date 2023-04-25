@@ -8,10 +8,10 @@ The tool algorithm is described in :
 Yannis Duffourd (Inserm U1231 - Team GAD / CHU Dijon)
 
 ## Contributors
-Emilie Tisserant (Inserm U1231 - Team GAD)
-Anthony Auclair (Inserm U1231 - Team GAD / CHU Dijon)
-Marine Bergot (Inserm U1231 - Team GAD / CHU Dijon)
-Philippine Garret (Inserm U1231 - Team GAD)
+    Emilie Tisserant (Inserm U1231 - Team GAD)
+    Anthony Auclair (Inserm U1231 - Team GAD / CHU Dijon)
+    Marine Bergot (Inserm U1231 - Team GAD / CHU Dijon)
+    Philippine Garret (Inserm U1231 - Team GAD)
 
 ## Requirements 
 - cmake 3.10 or superior
