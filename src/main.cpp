@@ -1,3 +1,4 @@
+#define BOOST_LOG_DYN_LINK 1
 // C++ std libs
 #include <iostream>
 #include <vector>
@@ -8,6 +9,8 @@
 #include <stdexcept>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <execinfo.h>
+#include <signal.h>
 
 // C++ Boost
 #include <boost/program_options.hpp>
@@ -42,10 +45,22 @@ void init_logging() {
 	// cerr << "End of init logging" << logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::trace) << endl; 
 }
 
+void handler(int sig) {
+  void *array[10];
+  size_t size;
 
+  // get void*'s for all entries on the stack
+  size = backtrace(array, 10);
+
+  // print out all the frames to stderr
+  fprintf(stderr, "Error: signal %d:\n", sig);
+  backtrace_symbols_fd(array, size, STDERR_FILENO);
+  exit(1);
+}
 
 int main(int argc, char* argv[])
 {
+	signal(SIGSEGV, handler);
 	init_logging();
   	BOOST_LOG_TRIVIAL(trace) << "Starting Main" << endl;
 
@@ -65,7 +80,7 @@ int main(int argc, char* argv[])
 	po::options_description desc("Allowed options");
 	desc.add_options()
 	("help,h", "produce help message")
-	("input,i",  po::value<string>( &inputFile ), "List of input file(s) containing detected CNV from samples" 
+	("input,i",  po::value<string>( &inputFile ), "List of input file(s) containing detected CNV from samples")
 	("control,c",  po::value<string>( &inputControlFile ), "List of input file(s) containing detected CNV from control")
 	("filter,f", po::value<int>( &filterSize ), "Minimum size for a CNV to be counted (0)")
     ("whole,w", "Whole mode. WARNING : Needs large amount of RAM")
@@ -111,7 +126,7 @@ int main(int argc, char* argv[])
 	{
 		if( !IsFileReadable( inputControlFile ) )
 		{
-			cerr << "File provided as input : " << inputControlFile << " is not accessible : stopping" << endl;
+			cerr << "File provided as control input : " << inputControlFile << " is not accessible : stopping" << endl;
 			return 1;
 		}
 		App = new cnvCompare(inputFile, inputControlFile, 1, filterSize);
@@ -131,16 +146,14 @@ int main(int argc, char* argv[])
 	useVCFFormat = false; 
 	useBEDFormat = true;
   }
+  App->setFormat(useVCFFormat , useBEDFormat);
 
   if (vm.count("suffix")) {
 	App->setSuffix(suffix); 
   }
   if (vm.count("dict")) {
-	App->setDict(ditcFile); 
+	App->setDictFile(dictFile); 
   }
-
-  App->setFormat(useVCFFormat , useBEDFormat);
-	
 
   if( vm.count( "whole" ) ) {
     App->altLoop();
