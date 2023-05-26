@@ -57,18 +57,21 @@ cnvCompare::cnvCompare() {
 cnvCompare::cnvCompare(string iF, int nT, int s) {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cnvCompare (string, int, int) Ctor" << endl;
   BOOST_LOG_TRIVIAL(trace) <<  "cnvCompare constructor called";
-  BOOST_LOG_TRIVIAL(trace) <<  "sizeof( char ) = " << sizeof(char);
-  BOOST_LOG_TRIVIAL(trace) <<  "sizeof( string ) = " << sizeof(string);
-  BOOST_LOG_TRIVIAL(trace) <<  "sizeof( int32_t ) = " << sizeof(int32_t);
-  BOOST_LOG_TRIVIAL(trace) <<  "sizeof( int ) = " << sizeof(int);
-
+  BOOST_LOG_TRIVIAL(trace) <<  "sizeof(char) = " << sizeof(char);
+  BOOST_LOG_TRIVIAL(trace) <<  "sizeof(string) = " << sizeof(string);
+  BOOST_LOG_TRIVIAL(trace) <<  "sizeof(int32_t) = " << sizeof(int32_t);
+  BOOST_LOG_TRIVIAL(trace) <<  "sizeof(int) = " << sizeof(int);
+  
+  // init of the needed class members
   this->inputFile = iF;
   this->nbThread = nT;
   this->useControls = false;
   this->filterSize = s;
   this->suffix = "count";
+  // Adding sample files 
   int n = this->fillMap(iF, "sample");
   BOOST_LOG_TRIVIAL(info) << n << " files added to sample list" << endl;
+  // populating chromosome either by parsing the dict of with a default human map
   if (this->hasDict) {
     this->parseDictFile(this->getDictFile());
     
@@ -91,16 +94,19 @@ cnvCompare::cnvCompare(string iF, int nT, int s) {
  **/
 cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cnvCompare (string, string, int, int) Ctor" << endl;
+  // init of the needed class members
   this->inputFile = iF;
   this->controlFile = cF;
   this->nbThread = nT;
   this->useControls = true;
   this->filterSize = s;
   this->suffix = "count";
+  // Adding sample files & control files
   int n = this->fillMap(iF, "sample");
   BOOST_LOG_TRIVIAL(info) << n << " files added to sample list" << endl;
   int m = this->fillMap(cF, "control");
   BOOST_LOG_TRIVIAL(info) << m << " files added to control list" << endl;
+  // populating chromosome either by parsing the dict of with a default human map
   if (this->hasDict) {
     this->parseDictFile(this->getDictFile());
   } else {
@@ -121,8 +127,11 @@ cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
 void cnvCompare::mainLoop() {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::mainLoop " << endl;
   for (auto &a : this->chromosomeMap) {
+    // getting data
     this->getDatabyChr(a);
+    // computing counts 
     this->computeCountsbyChr(a);
+    // GC 
     this->cleanData();
   }
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::mainLoop " << endl;
@@ -135,8 +144,12 @@ void cnvCompare::mainLoop() {
  **/
 void cnvCompare::altLoop() {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::altLoop " << endl;
+  // getting data
   this->getDataWhole();
+  // computing counts 
   this->computeCountsWhole();
+  // GC 
+  this->cleanData();
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::altLoop " << endl;
 }
 
@@ -147,8 +160,12 @@ void cnvCompare::altLoop() {
  **/
 void cnvCompare::fastLoop() {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::fastLoop " << endl;
+  // getting data
   this->getDataFast();
+  // computing counts 
   this->computeCountsFast();
+  // GC 
+  this->cleanData();
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::fastLoop " << endl;
 }
 
@@ -161,6 +178,8 @@ void cnvCompare::fastLoop() {
 void cnvCompare::cleanData() { 
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cleanData " << endl;
   this->dataByChr.clear();
+  this->data.clear();
+  this->breakpoints.clear(); 
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cleanData " << endl; 
 }
 
@@ -219,7 +238,6 @@ void cnvCompare::getDatabyChr(string incChr) {
         res = this->parseVCFLine(ligneCNV);
       }
       
-
       // type conversion
       chromosome = res[0];
 
@@ -228,9 +246,8 @@ void cnvCompare::getDatabyChr(string incChr) {
       {
         continue;
       }
-      
-      s_type = res[3];
 
+      s_type = res[3];
       // Pass if not del / dup
       if ((s_type != "DEL") && (s_type != "DUP"))
       {
@@ -255,6 +272,7 @@ void cnvCompare::getDatabyChr(string incChr) {
         value = 5;
       }
 
+      // inserting data 
       for (long i = start; i <= end; i++)
       {
         int value_to_insert = 0; 
@@ -297,18 +315,17 @@ void cnvCompare::computeCountsbyChr(string incChr) {
 
   // tsv parsing
   map<string, string>::iterator myIterA;
-  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++)
-  {
+  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++) {
     // struct timeval tbegin, tend;
     ligne = myIterA->first;
     string s = myIterA->second;
-    if (s == "control")
-    {
+    if (s == "control") {
       continue;
     }
     ifstream cnvStream(ligne.c_str());
     BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << endl;
 
+    // managing output file names
     fs::path pathObj(ligne);
     if (pathObj.has_extension()) {
       string extension = pathObj.extension().string(); 
@@ -321,40 +338,28 @@ void cnvCompare::computeCountsbyChr(string incChr) {
       BOOST_LOG_TRIVIAL(error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution" << endl;
       exit(1);
     }
-
-    BOOST_LOG_TRIVIAL(info) << "\t\tWriting in file " << outFileName << endl;
+    BOOST_LOG_TRIVIAL(info) << "\t\tWriting in file " << outFileName << " in format : " << this->getFormat() << endl;
+    // opening file in the apporpriate mode
     ofstream outStream;
-
-    if (incChr == "chr1")
-    {
+    if (incChr == "chr1") {
       outStream.open(outFileName.c_str(), ios::out);
-    }
-    else
-    {
+    } else {
       outStream.open(outFileName.c_str(), ios::out | ios::app);
     }
 
-
-    // cerr << "The format is : " << this->getFormat() << endl; 
-
-    while (getline(cnvStream, ligneCNV))
-    {
+    // parsing input file
+    while (getline(cnvStream, ligneCNV)) {
       // need to deal with header "#"
-      if (ligneCNV.find(header) == 0)
-      {
-        if ((this->getFormat() == "VCF") && (incChr == "chr1"))
-        {
+      if (ligneCNV.find(header) == 0) {
+        if ((this->getFormat() == "VCF") && (incChr == "chr1")) {
           outStream << ligneCNV << endl;
         }
         continue;
       }
       vector<string> res;
-      if (this->getFormat() == "BED")
-      {
+      if (this->getFormat() == "BED") {
         res = this->parseBEDLine(ligneCNV);
-      }
-      else
-      {
+      } else {
         res = this->parseVCFLine(ligneCNV);
       }
 
@@ -364,48 +369,38 @@ void cnvCompare::computeCountsbyChr(string incChr) {
       long start = string_to_int(res[1]);
       long end = string_to_int(res[2]);
       unsigned int value = string_to_int(res[4]);
-      if (value > 5)
-      {
+      if (value > 5) {
         value = 5;
       }
       // skip if not the good chr
-      if (chromosome != incChr)
-      {
+      if (chromosome != incChr) {
         continue;
       }
 
       // pass if not del or dup
       BOOST_LOG_TRIVIAL(trace) << "s_type = " << s_type << endl;
-      if ((s_type != "DUP") && (s_type != "DEL"))
-      {
+      if ((s_type != "DUP") && (s_type != "DEL")) {
         outStream << ligneCNV << endl;
         continue;
       }
 
       // counts 
       double total = 0;
-      for (long i = start; i <= end; i++)
-      {
+      for (long i = start; i <= end; i++) {
         total += (double)(this->dataByChr[value][i]);
       }
       double mean = total / (double)((end-start)+1);
 
       // need to adapt the output according to the choosen format
-      if (this->getFormat() == "BED")
-      {
+      if (this->getFormat() == "BED") {
         outStream << chromosome << "\t" << start << "\t" << end << "\t";
-        if (value > 2)
-        {
+        if (value > 2) {
           outStream << "DUP\t";
-        }
-        else
-        {
+        } else {
           outStream << "DEL\t";
         }
         outStream << value << "\t" << mean << "/" << this->getNbFile() << endl;
-      }
-      else
-      {
+      } else {
         // output VCF
         res = this->parseVCFLine(ligneCNV);
         istringstream issLigne(ligneCNV);
@@ -418,10 +413,8 @@ void cnvCompare::computeCountsbyChr(string incChr) {
         string value;
         i = 0;
 
-        while (getline(issLigne, mot, '\t'))
-        {
-          switch (i)
-          {
+        while (getline(issLigne, mot, '\t')) {
+          switch (i) {
           case 0:
             outStream << mot;
             break;
@@ -429,32 +422,25 @@ void cnvCompare::computeCountsbyChr(string incChr) {
             outStream << "\t";
             info = mot;
             issInfo.str(info);
-            while (getline(issInfo, infomot, ';'))
-            {
-              if (infomot.find("SVTYPE=") == 0)
-              {
+            while (getline(issInfo, infomot, ';')) {
+              if (infomot.find("SVTYPE=") == 0) {
                 svtype = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if (infomot.find("END=") == 0)
-              {
+              if (infomot.find("END=") == 0) {
                 ciend = parseOnSep(infomot, "=")[1];
                 continue;
               }
-              if (infomot.find("VALUE=") == 0)
-              {
+              if (infomot.find("VALUE=") == 0) {
                 value = parseOnSep(infomot, "=")[1];
                 continue;
               }
               outStream << infomot << ";";
             }
             outStream << "END=" << ciend << ";VALUE=" << value << ";SVTYPE=";
-            if (string_to_int(value) > 2)
-            {
+            if (string_to_int(value) > 2) {
               outStream << "DUP;";
-            }
-            else
-            {
+            } else {
               outStream << "DEL;";
             }
             outStream << "COUNT=" << mean << "/" << this->getNbFile();
@@ -469,9 +455,7 @@ void cnvCompare::computeCountsbyChr(string incChr) {
       }
       // gettimeofday(&tend, NULL);
       // ExecMeasure(tbegin, tend, "VCF writing");
-
     }
-
     outStream.close();
   }
   this->dataByChr.clear();
@@ -494,10 +478,8 @@ vector<string> cnvCompare::parseBEDLine(string incLine) {
 
   // get information from the line
   istringstream issLigne(incLine);
-  while (getline(issLigne, mot, '\t'))
-  {
-    switch (i)
-    {
+  while (getline(issLigne, mot, '\t')) {
+    switch (i) {
     case 0:
       output.push_back(mot);
       break;
@@ -543,10 +525,8 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
   // get information from the line
   istringstream issLigne(incLine);
   i = 0;
-  while (getline(issLigne, mot, '\t'))
-  {
-    switch (i)
-    {
+  while (getline(issLigne, mot, '\t')) {
+    switch (i) {
     case 0:
       output.push_back(mot);
       break;
@@ -556,18 +536,14 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
     case 7:
       info = mot;
       issInfo.str(info);
-      while (getline(issInfo, infomot, ';'))
-      {
-        if (infomot.find("SVTYPE=") == 0)
-        {
+      while (getline(issInfo, infomot, ';')) {
+        if (infomot.find("SVTYPE=") == 0) {
           temp["SVTYPE"] = parseOnSep(infomot, "=")[1];
         }
-        if (infomot.find("END=") == 0)
-        {
+        if (infomot.find("END=") == 0) {
           temp["END"] = parseOnSep(infomot, "=")[1];
         }
-        if (infomot.find("VALUE=") == 0)
-        {
+        if (infomot.find("VALUE=") == 0) {
           temp["VALUE"] = parseOnSep(infomot, "=")[1];
         }
       }
@@ -641,18 +617,17 @@ void cnvCompare::getDataWhole() {
       unsigned int value = string_to_int(res[4]);
 
       // size filter
-      if ((end - start) < this->getFilterSize())
-      {
+      if ((end - start) < this->getFilterSize()) {
         continue;
       }
 
-      if (value > 5)
-      {
+      // roofing the value
+      if (value > 5) {
         value = 5;
       }
 
-      if (!(this->data.count(chromosome) > 0))
-      {
+      // Init the chromosome map 
+      if (!(this->data.count(chromosome) > 0)) {
         unordered_map<unsigned int, unordered_map<long, short>> tempMap;
         this->data[chromosome] = tempMap;
         unordered_map<long, short> tempMap2;
@@ -663,11 +638,10 @@ void cnvCompare::getDataWhole() {
         this->data[chromosome][4] = tempMap2;
         this->data[chromosome][5] = tempMap2;
       }
-      for (long i = start; i <= end; i++)
-      {
+      // filling with values
+      for (long i = start; i <= end; i++) {
         int value_to_insert = 0; 
-        if ((this->data[chromosome][value]).find(i) != (this->data[chromosome][value]).end())
-        {
+        if ((this->data[chromosome][value]).find(i) != (this->data[chromosome][value]).end()) {
           value_to_insert += this->data[chromosome][value][i] + 1; 
         }
         this->data[chromosome][value].insert_or_assign(i, value_to_insert);
@@ -686,192 +660,6 @@ void cnvCompare::getDataWhole() {
  **/
 void cnvCompare::computeCountsWhole() {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeCountsWhole " << endl;
-  BOOST_LOG_TRIVIAL(info) << "Computing counts" << endl;
-  // struct timeval tbegin, tend;
-  string ligne;
-  string ligneCNV;
-  string mot;
-  string header = "#";
-  int i = 0;
-  string currentChr;
-  string chromosome;
-  string s_type;
-  string s_start;
-  string s_end;
-  string s_value;
-  string outFileName;
-
-  map<string, string>::iterator myIterA;
-  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++)
-  {
-    ligne = myIterA->first;
-    string s = myIterA->second;
-    if (s == "control")
-    {
-      continue;
-    }
-
-    ifstream cnvStream(ligne.c_str());
-
-    BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << endl;
-    fs::path pathObj(ligne);
-    if (pathObj.has_extension()) {
-      string extension = pathObj.extension().string(); 
-      BOOST_LOG_TRIVIAL(trace) << "Extension detected : " << extension << endl;
-      BOOST_LOG_TRIVIAL(trace) << "Suffix is : " << this->getSuffix() << endl;
-      outFileName = pyReplace(ligne, extension, ("." + this->getSuffix() + extension));
-      BOOST_LOG_TRIVIAL(trace) << "outFileName is : " << outFileName << endl;
-    } else {
-      outFileName = ligne + "." + this->getSuffix();
-    }
-    if (outFileName == ligne) {
-      BOOST_LOG_TRIVIAL(error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution" << endl;
-      exit(1);
-    }
-
-    BOOST_LOG_TRIVIAL(info) << "\t\tWriting in file " << outFileName << endl;
-    ofstream outStream;
-    outStream.open(outFileName.c_str(), ios::out);
-    while (getline(cnvStream, ligneCNV))
-    {
-      // need to deal with header "#"
-      if (ligneCNV.find(header) == 0)
-      {
-        if (this->getFormat() == "VCF")
-        {
-          outStream << ligneCNV << endl;
-        }
-        continue;
-      }
-      vector<string> res;
-      if (this->getFormat() == "BED")
-      {
-        res = this->parseBEDLine(ligneCNV);
-      }
-      else
-      {
-        res = this->parseVCFLine(ligneCNV);
-      }
-
-      // type conversion
-      chromosome = res[0];
-      s_type = res[3];
-      BOOST_LOG_TRIVIAL(trace) << "s_type = " << s_type << endl;
-      if ((s_type != "DUP") && (s_type != "DEL"))
-      {
-        outStream << ligneCNV << endl;
-        continue;
-      }
-
-      long start = string_to_int(res[1]);
-      long end = string_to_int(res[2]);
-      unsigned int value = string_to_int(res[4]);
-
-      if (value > 5)
-      {
-        value = 5;
-      }
-
-      // counts
-      double total = 0;
-      for (long i = start; i <= end; i++)
-      {
-        total += (double)(this->data[chromosome][value][i]);
-      }
-      double mean = total / (double)((end-start)+1);
-
-      // need to adapt the output according to the choosen format
-      if (this->getFormat() == "BED")
-      {
-        outStream << chromosome << "\t" << start << "\t" << end << "\t";
-        if (value > 2)
-        {
-          outStream << "DUP\t";
-        }
-        else
-        {
-          outStream << "DEL\t";
-        }
-        outStream << value << "\t" << mean << "/" << this->getNbFile() << endl;
-      }
-      else
-      {
-        // output VCF
-        res = this->parseVCFLine(ligneCNV);
-        istringstream issLigne(ligneCNV);
-        istringstream issInfo;
-        string mot;
-        string info;
-        string infomot;
-        string svtype;
-        string ciend;
-        string value;
-        i = 0;
-
-        while (getline(issLigne, mot, '\t'))
-        {
-          switch (i)
-          {
-          case 0:
-            outStream << mot;
-            break;
-          case 7:
-            outStream << "\t";
-            info = mot;
-            issInfo.str(info);
-            while (getline(issInfo, infomot, ';'))
-            {
-              if (infomot.find("SVTYPE=") == 0)
-              {
-                svtype = parseOnSep(infomot, "=")[1];
-                continue;
-              }
-              if (infomot.find("END=") == 0)
-              {
-                ciend = parseOnSep(infomot, "=")[1];
-                continue;
-              }
-              if (infomot.find("VALUE=") == 0)
-              {
-                value = parseOnSep(infomot, "=")[1];
-                continue;
-              }
-              outStream << infomot << ";";
-            }
-            outStream << "END=" << ciend << ";VALUE=" << value << ";SVTYPE=";
-            if (string_to_int(value) > 2)
-            {
-              outStream << "DUP;";
-            }
-            else
-            {
-              outStream << "DEL;";
-            }
-            outStream << "COUNT=" << mean << "/" << this->getNbFile();
-            break;
-          default:
-            outStream << "\t" << mot;
-            break;
-          }
-          i++;
-        }
-        outStream << endl;
-      }
-    }
-
-    outStream.close();
-  }
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeCountsWhole " << endl;
-}
-
-
-/**
- * @brief Method used to commpute counts with the fast on the whole genome
- * @param none
- * @return none
- **/
-void cnvCompare::computeCountsFast() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeCountsFast " << endl;
   BOOST_LOG_TRIVIAL(info) << "Computing counts" << endl;
   // struct timeval tbegin, tend;
   string ligne;
@@ -927,7 +715,7 @@ void cnvCompare::computeCountsFast() {
       vector<string> res;
       if (this->getFormat() == "BED") {
         res = this->parseBEDLine(ligneCNV);
-      } else  {
+      } else {
         res = this->parseVCFLine(ligneCNV);
       }
 
@@ -944,6 +732,165 @@ void cnvCompare::computeCountsFast() {
       long end = string_to_int(res[2]);
       unsigned int value = string_to_int(res[4]);
 
+      if (value > 5) {
+        value = 5;
+      }
+
+      // counts
+      double total = 0;
+      for (long i = start; i <= end; i++) {
+        total += (double)(this->data[chromosome][value][i]);
+      }
+      double mean = total / (double)((end-start)+1);
+
+      // need to adapt the output according to the choosen format
+      if (this->getFormat() == "BED") {
+        outStream << chromosome << "\t" << start << "\t" << end << "\t";
+        if (value > 2) {
+          outStream << "DUP\t";
+        } else {
+          outStream << "DEL\t";
+        }
+        outStream << value << "\t" << mean << "/" << this->getNbFile() << endl;
+      } else {
+        // output VCF
+        res = this->parseVCFLine(ligneCNV);
+        istringstream issLigne(ligneCNV);
+        istringstream issInfo;
+        string mot;
+        string info;
+        string infomot;
+        string svtype;
+        string ciend;
+        string value;
+        i = 0;
+
+        while (getline(issLigne, mot, '\t')) {
+          switch (i) {
+          case 0:
+            outStream << mot;
+            break;
+          case 7:
+            outStream << "\t";
+            info = mot;
+            issInfo.str(info);
+            while (getline(issInfo, infomot, ';')) {
+              if (infomot.find("SVTYPE=") == 0) {
+                svtype = parseOnSep(infomot, "=")[1];
+                continue;
+              }
+              if (infomot.find("END=") == 0) {
+                ciend = parseOnSep(infomot, "=")[1];
+                continue;
+              }
+              if (infomot.find("VALUE=") == 0) {
+                value = parseOnSep(infomot, "=")[1];
+                continue;
+              }
+              outStream << infomot << ";";
+            }
+            outStream << "END=" << ciend << ";VALUE=" << value << ";SVTYPE=";
+            if (string_to_int(value) > 2) {
+              outStream << "DUP;";
+            } else {
+              outStream << "DEL;";
+            }
+            outStream << "COUNT=" << mean << "/" << this->getNbFile();
+            break;
+          default:
+            outStream << "\t" << mot;
+            break;
+          }
+          i++;
+        }
+        outStream << endl;
+      }
+    }
+    outStream.close();
+  }
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeCountsWhole " << endl;
+}
+
+
+/**
+ * @brief Method used to commpute counts with the fast on the whole genome
+ * @param none
+ * @return none
+ **/
+void cnvCompare::computeCountsFast() {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeCountsFast " << endl;
+  BOOST_LOG_TRIVIAL(info) << "Computing counts" << endl;
+  // struct timeval tbegin, tend;
+  string ligne;
+  string ligneCNV;
+  string mot;
+  string header = "#";
+  int i = 0;
+  string currentChr;
+  string chromosome;
+  string s_type;
+  string s_start;
+  string s_end;
+  string s_value;
+  string outFileName;
+
+  map<string, string>::iterator myIterA;
+  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++) {
+    ligne = myIterA->first;
+    string s = myIterA->second;
+    if (s == "control") {
+      continue;
+    }
+    //managing the output file format
+    ifstream cnvStream(ligne.c_str());
+    BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << endl;
+    fs::path pathObj(ligne);
+    if (pathObj.has_extension()) {
+      string extension = pathObj.extension().string(); 
+      BOOST_LOG_TRIVIAL(trace) << "Extension detected : " << extension << endl;
+      BOOST_LOG_TRIVIAL(trace) << "Suffix is : " << this->getSuffix() << endl;
+      outFileName = pyReplace(ligne, extension, ("." + this->getSuffix() + extension));
+      BOOST_LOG_TRIVIAL(trace) << "outFileName is : " << outFileName << endl;
+    } else {
+      outFileName = ligne + "." + this->getSuffix();
+    }
+    if (outFileName == ligne) {
+      BOOST_LOG_TRIVIAL(error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution" << endl;
+      exit(1);
+    }
+
+    // parsing input file format
+    BOOST_LOG_TRIVIAL(info) << "\t\tWriting in file " << outFileName << endl;
+    ofstream outStream;
+    outStream.open(outFileName.c_str(), ios::out);
+    while (getline(cnvStream, ligneCNV)) {
+      // need to deal with header "#"
+      if (ligneCNV.find(header) == 0) {
+        if (this->getFormat() == "VCF") {
+          outStream << ligneCNV << endl;
+        }
+        continue;
+      }
+      vector<string> res;
+      if (this->getFormat() == "BED") {
+        res = this->parseBEDLine(ligneCNV);
+      } else  {
+        res = this->parseVCFLine(ligneCNV);
+      }
+
+      // type conversion
+      chromosome = res[0];
+      s_type = res[3];
+      BOOST_LOG_TRIVIAL(trace) << "s_type = " << s_type << endl;
+      if ((s_type != "DUP") && (s_type != "DEL")) {
+        outStream << ligneCNV << endl;
+        continue;
+      }
+
+      long start = string_to_int(res[1]);
+      long end = string_to_int(res[2]);
+      unsigned int value = string_to_int(res[4]);
+      // roofing the value
       if (value > 5) {
         value = 5;
       }
@@ -1023,7 +970,6 @@ void cnvCompare::computeCountsFast() {
         outStream << endl;
       }
     }
-
     outStream.close();
   }
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeCountsFast " << endl;
@@ -1260,7 +1206,6 @@ string cnvCompare::getFormat() {
  * @brief Method used to populate the chromosome map
  * @param none
  * @return int value : a return code : 0 if ok, > 0 if not ok
- * @todo Need to deal with non human genomes
  **/
 int cnvCompare::populateChr() {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::populateChr " << endl;
@@ -1329,9 +1274,9 @@ void cnvCompare::parseDictFile(string incDictFile) {
   string mot;
   string header = "@SQ";
 
+  // Parsing dict file
   BOOST_LOG_TRIVIAL(info) << "Reading Dict file " << incDictFile << endl;
   ifstream dictStream(incDictFile.c_str());
-
   while (getline(dictStream, ligne)) {
     string chrName; 
     // need to deal with header 
