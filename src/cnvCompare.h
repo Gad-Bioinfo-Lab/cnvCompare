@@ -4,19 +4,23 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <list>
 
 class cnvCompare
 {
 	public:
 		cnvCompare();
-		cnvCompare( std::string , int , int);
+		cnvCompare(std::string , int , int);
 		cnvCompare(std::string , std::string, int, int);
 		void mainLoop();
 		void altLoop();
+		void fastLoop(); 
 		void getDataWhole();
 		void getDatabyChr(std::string);
+		void getDataFast(); 
 		void computeCountsWhole();
 		void computeCountsbyChr(std::string);
+		void computeCountsFast();
 		void cleanData();
 		short int getNbFile();
 		int fillMap(std::string, std::string); 
@@ -31,6 +35,8 @@ class cnvCompare
 		std::string getSuffix(); 
 		std::string getDictFile(); 
 		void setDictFile(std::string);
+		void parseDictFile(std::string);
+		void setHasDict(bool);
 
 	private:
 		std::string inputFile;
@@ -38,7 +44,8 @@ class cnvCompare
 		int nbThread;
 		std::unordered_map< std::string , std::unordered_map< unsigned int , std::unordered_map<long, short> > > data;
 		std::unordered_map<unsigned int , std::unordered_map<long, short> > dataByChr;
-		std::vector<std::string> chromosomeMap ;
+		std::unordered_map<std::string, std::unordered_map<unsigned int, std::map<long, short> > > breakpoints; 
+		std::vector<std::string> chromosomeMap;
 		short int nbFile = 0;
 		bool useControls = false; 
 		std::map<std::string, std::string> fileMap; 
@@ -48,6 +55,7 @@ class cnvCompare
 		int populateChr(); 
 		std::string suffix;
 		std::string dictFile; 
+		bool hasDict; 
 
 };
 #endif
