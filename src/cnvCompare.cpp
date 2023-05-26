@@ -1030,15 +1030,12 @@ void cnvCompare::computeCountsFast() {
 }
 
 
-
-
 /**
  * @brief Method used to collect data from input files : fast mode
  * @param none
  * @return none
  **/
-void cnvCompare::getDataFast()
-{
+void cnvCompare::getDataFast() {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getDataFast " << endl;
   BOOST_LOG_TRIVIAL(info) << "Gathering data" << endl;
   // struct timeval tbegin, tend;
@@ -1055,28 +1052,22 @@ void cnvCompare::getDataFast()
 
   // tsv parsing
   map<string, string>::iterator myIterA;
-  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++)
-  {
+  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++) {
     ligne = myIterA->first;
     ifstream cnvStream(ligne.c_str());
     BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << "\t";
     this->nbFile++;
     long nbLigneFile = 0;
-    while (getline(cnvStream, ligneCNV))
-    {
+    while (getline(cnvStream, ligneCNV)) {
       // need to deal with header "#"
-      if (ligneCNV.find(header) == 0)
-      {
+      if (ligneCNV.find(header) == 0) {
         continue;
       }
       nbLigneFile++;
       vector<string> res;
-      if (this->getFormat() == "BED")
-      {
+      if (this->getFormat() == "BED") {
         res = this->parseBEDLine(ligneCNV);
-      }
-      else
-      {
+      } else {
         res = this->parseVCFLine(ligneCNV);
       }
 
@@ -1088,14 +1079,12 @@ void cnvCompare::getDataFast()
       unsigned int value = string_to_int(res[4]);
 
       // size filter
-      if ((end - start) < this->getFilterSize())
-      {
+      if ((end - start) < this->getFilterSize()) {
         continue;
       }
 
       // value roofing 
-      if (value > 5)
-      {
+      if (value > 5) {
         value = 5;
       }
 
@@ -1179,8 +1168,7 @@ short int cnvCompare::getNbFile() {
  * @param none
  * @return string value : the name of the input file list
  **/
-string cnvCompare::getInputFile()
-{
+string cnvCompare::getInputFile() {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getInputFile " << endl;
   return this->inputFile;
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getInputFile " << endl;
@@ -1192,8 +1180,7 @@ string cnvCompare::getInputFile()
  * @param none
  * @return string value : the name of the control file list
  **/
-string cnvCompare::getControlFile()
-{
+string cnvCompare::getControlFile() {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getControlFile " << endl;
   return this->controlFile;
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getControlFile " << endl;
@@ -1206,23 +1193,18 @@ string cnvCompare::getControlFile()
  * @param status : string value : precising if the files are controls or inputs
  * @return int value : a return code : 0 if ok, > 0 if not ok
  **/
-int cnvCompare::fillMap(string incFile, string status)
-{
+int cnvCompare::fillMap(string incFile, string status) {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::fillMap " << endl;
   ifstream allStream(incFile.c_str());
   string ligne;
-  if (allStream)
-  {
-    while (getline(allStream, ligne))
-    {
+  if (allStream) {
+    while (getline(allStream, ligne)) {
       ifstream cnvStream(ligne.c_str());
       BOOST_LOG_TRIVIAL(info) << "\tadding file " << ligne << " as " << status << endl;
-      if (!IsFileReadable(ligne))
-      {
+      if (!IsFileReadable(ligne)) {
         BOOST_LOG_TRIVIAL(warning) << "File provided as " << status << " : " << ligne << " is not accessible : passsing file" << endl;
         continue;
       }
-
       this->nbFile++;
       this->fileMap[ligne] = status;
     }
@@ -1237,8 +1219,7 @@ int cnvCompare::fillMap(string incFile, string status)
  * @param none
  * @return int value : the filter size value
  **/
-int cnvCompare::getFilterSize()
-{
+int cnvCompare::getFilterSize() {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getFilterSize " << endl;
   return this->filterSize;
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getFilterSize " << endl;
@@ -1251,8 +1232,7 @@ int cnvCompare::getFilterSize()
  * @param incBEDChoice A boolean indicating if the files are in BED format
  * @return none
  **/
-void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice)
-{
+void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice) {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::setFormat " << endl;
   this->useVCFFormat = incVCFChoice;
   this->useBEDFormat = incBEDChoice;
@@ -1265,15 +1245,11 @@ void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice)
  * @param none
  * @return string value : the file format
  **/
-string cnvCompare::getFormat()
-{
+string cnvCompare::getFormat() {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getFormat " << endl;
-  if (this->useVCFFormat)
-  {
+  if (this->useVCFFormat) {
     return "VCF";
-  }
-  else
-  {
+  } else {
     return "BED";
   }
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getFormat " << endl;
@@ -1356,12 +1332,10 @@ void cnvCompare::parseDictFile(string incDictFile) {
   BOOST_LOG_TRIVIAL(info) << "Reading Dict file " << incDictFile << endl;
   ifstream dictStream(incDictFile.c_str());
 
-  while (getline(dictStream, ligne))
-  {
+  while (getline(dictStream, ligne)) {
     string chrName; 
     // need to deal with header 
-    if (ligne.find(header) == 0)
-    {
+    if (ligne.find(header) == 0) {
       vector<string> vline = parseOnSep("\t", ligne); 
       vector<string>::iterator myIter; 
       for (myIter = vline.begin(); myIter != vline.end(); myIter ++) {
