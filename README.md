@@ -27,7 +27,7 @@ make
 
 ## Usage 
 ```
-cnvCompare -i </path/to/the/file/list> --vcf/--bed  
+cnvCompare -i </path/to/the/file/list> --vcf|--bed  
    Allowed options :   
       -h, --help : displaying help  
       -i, --input <string>: List of input file(s) containing detected CNV from samples (prefer absolute path)  
