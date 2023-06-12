@@ -291,7 +291,7 @@ void cnvCompare::getDatabyChr(string incChr) {
 
 
 /**
- * @brief Method used to commpute counts from in memory data chr by chr
+ * @brief Method used to compute counts from in memory data chr by chr
  * @param incChr the chr to filter
  * @return none
  **/
@@ -850,7 +850,7 @@ void cnvCompare::computeCountsFast() {
       BOOST_LOG_TRIVIAL(trace) << "Extension detected : " << extension << endl;
       BOOST_LOG_TRIVIAL(trace) << "Suffix is : " << this->getSuffix() << endl;
       outFileName = pyReplace(ligne, extension, ("." + this->getSuffix() + extension));
-      BOOST_LOG_TRIVIAL(trace) << "outFileName is : " << outFileName << endl;
+      BOOST_LOG_TRIVIAL(debug) << "outFileName is : " << outFileName << endl;
     } else {
       outFileName = ligne + "." + this->getSuffix();
     }
@@ -881,7 +881,7 @@ void cnvCompare::computeCountsFast() {
       // type conversion
       chromosome = res[0];
       s_type = res[3];
-      BOOST_LOG_TRIVIAL(trace) << "s_type = " << s_type << endl;
+      BOOST_LOG_TRIVIAL(debug) << "s_type = " << s_type << endl;
       if ((s_type != "DUP") && (s_type != "DEL")) {
         outStream << ligneCNV << endl;
         continue;
@@ -1034,8 +1034,12 @@ void cnvCompare::getDataFast() {
         value = 5;
       }
 
+      BOOST_LOG_TRIVIAL(debug) << "\t\twill insert : " << chromosome << ":" << start << "-" << end << " ; cnv : " << value;
+
+
       // fill empty map if chr is not existing
       if (!(this->breakpoints.count(chromosome) > 0)) {
+        BOOST_LOG_TRIVIAL(debug) << "\t\t\tCreating breakpoint map for this chromosome"; 
         unordered_map<unsigned int, map<long, short> > tempMap;
         this->breakpoints[chromosome] = tempMap;
         map<long, short> tempList;
@@ -1050,45 +1054,76 @@ void cnvCompare::getDataFast() {
       // look for the start / end values
       // if the map is empty do not try to browse it, just insert the start and end values and treat the next line. 
       if (this->breakpoints[chromosome][value].empty()) {
+        BOOST_LOG_TRIVIAL(debug) << "\t\t\tMap was empty : so just inserting start & end";
         this->breakpoints[chromosome][value][start] = 1;
         this->breakpoints[chromosome][value][end] = 0;
         continue; 
       }
 
       // insert start and end values in the sorted map
-      long beforeStart = 0;
-      short valueBeforeStart = 0; 
-      short lastValue = 0;
-      map<long, short>::iterator it; 
-      bool startIsInserted = false; 
-      // need to browse the map to get old values
-      for (it = this->breakpoints[chromosome][value].begin() ; it != this->breakpoints[chromosome][value].end() ; ++it ) {
-        beforeStart = it->first;
-        valueBeforeStart = it->second; 
-        if ((it->first >= start) && (it->first <= end)) {
-          // insert the start if not existing
-          if (! startIsInserted) {
-            if (!(it->first == start)) {
-              this->breakpoints[chromosome][value][start] = valueBeforeStart + 1;
-              startIsInserted = true;
-            } else {
-              this->breakpoints[chromosome][value][start] += 1;
-              startIsInserted = true;
-            }
-          // otherwise just increment the values until end is reached 
-          } else {
-            this->breakpoints[chromosome][value][it->first] += 1;
-          }
-        }
-        // end point passed, insert it and stop. 
-        // as the map is naturally sorted, no need to compute any index or so... 
-        if (it->first > end) {
-          this->breakpoints[chromosome][value][end] = lastValue;
-          break;
-        }
-        // store the last value, needed for end value insertion
-        lastValue = valueBeforeStart;
+      short lastCount = 0;
+      map<long, short>::iterator it, inserted_it, it_beforestart, it_beforeend, it_afterstart, it_afterend;
+
+      // need to get old values
+      it_beforestart = breakpoints[chromosome][value].lower_bound(start);
+      it_beforeend = breakpoints[chromosome][value].lower_bound(end);
+
+      it_afterstart = breakpoints[chromosome][value].upper_bound(start);
+      it_afterend = breakpoints[chromosome][value].upper_bound(end);
+      
+      if (it_beforestart != breakpoints[chromosome][value].end()) {
+        it_beforestart --;
+        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before start is " << it_beforestart->first << ":" << it_beforestart->second;
+      } else {
+        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before start is after the current end of the map";
       }
+      if (it_beforeend != breakpoints[chromosome][value].end()) {
+        it_beforeend --;
+        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before end is " << it_beforeend->first << ":" << it_beforeend->second;
+      } else {
+        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before end is after the current end of the map";
+      }
+      if (it_afterstart != breakpoints[chromosome][value].end()) {
+        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after start is " << it_afterstart->first << ":" << it_afterstart->second;
+      } else {
+        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after start is after the current end of the map";
+      }
+      if (it_afterend != breakpoints[chromosome][value].end()) {
+        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after end is " << it_afterend->first << ":" << it_afterend->second;
+      } else {
+        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after end is after the current end of the map";
+      }
+
+      // manage begin of the map
+      if ((it_beforestart == breakpoints[chromosome][value].begin()) || (it_beforestart == breakpoints[chromosome][value].end())){
+        lastCount = 0;
+      } else {
+        lastCount =  it_beforestart->second;
+      }
+
+      // insert start point 
+      breakpoints[chromosome][value].insert_or_assign(start, lastCount + 1);
+      BOOST_LOG_TRIVIAL(debug) << "\t\tStart inserted " << start << ":" << lastCount+ 1;
+
+      // get last value of the interval & manage end of the map
+      if (it_beforeend == breakpoints[chromosome][value].end()) {
+        lastCount = 0;
+      } else {
+        lastCount =  it_beforeend->second;
+      }
+
+      // modify all value until end
+      for (it = it_afterstart ; it != it_afterend ; ++ it) {
+        if (it != breakpoints[chromosome][value].end()) {
+          breakpoints[chromosome][value][it->first] += 1;
+          BOOST_LOG_TRIVIAL(debug) << "\t\tChanging breakpoints " << it->first << ":" << breakpoints[chromosome][value][it->first] - 1 << " to " << breakpoints[chromosome][value][it->first];
+        }
+      }
+
+      // insert the end 
+      breakpoints[chromosome][value].insert_or_assign(end, lastCount);
+      BOOST_LOG_TRIVIAL(debug) << "\t\tEnd inserted " << end << ":" << lastCount;
+      BOOST_LOG_TRIVIAL(debug) << "\t\tSize of breakpoints at chr : " << chromosome << " and value " << value << " : " << breakpoints[chromosome][value].size();
     }
     BOOST_LOG_TRIVIAL(info) << " with " << nbLigneFile << " events detected " << endl;
   }
