@@ -57,8 +57,7 @@ void handler(int sig) {
   exit(1);
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
 	// catching signals
 	signal(SIGSEGV | SIGINT | SIGTERM | SIGABRT | SIGFPE, handler);
 
@@ -85,7 +84,7 @@ int main(int argc, char* argv[])
 	("control,c",  po::value<string>( &inputControlFile ), "List of input file(s) containing detected CNV from control")
 	("filter,f", po::value<int>( &filterSize ), "Minimum size for a CNV to be counted (0)")
 	("chrom,h", "Chromosome mode. Legacy mode in case of issue with the fast mode")
-	("fast,q", "Fast mode. WARNING : experimental")
+	("fast,q", "Fast mode. (default)")
 	("dict,d", po::value<string>( &dictFile ), "Dictionnary used to populate the chromosome list")
 	("suffix,s", po::value<string>( &suffix ), "Suffix to use for the output files (default : count")
 	("vcf", "VCF mode : input files are in VCF format according to vcf specification v4.7 (default)")
@@ -130,7 +129,6 @@ int main(int argc, char* argv[])
 	cnvCompare * App;
 
 	// check provided files and contruct object according to available options
-	// consider using a template ? Is it possible in a constructor ?
 	if( inputControlFile.length( ) > 0 ) {
 		if( !IsFileReadable( inputControlFile ) ) {
 			cerr << "File provided as control input : " << inputControlFile << " is not accessible : stopping" << endl;
@@ -158,6 +156,12 @@ int main(int argc, char* argv[])
 	}
 
 	// configure file format
+	if ((vm.count("vcf")) and (vm.count("bed"))) {
+		cerr << "You asked for BED and VCF format, you need to choose only one." << endl; 
+		cerr << "\t'Choisir c'est renoncer.' André Gide" << endl;
+		return 1;
+	}
+
 	if (vm.count("vcf")) {
 		useVCFFormat = true;
 		useBEDFormat = false; 
