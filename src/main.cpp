@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
 	("control,c",  po::value<string>( &inputControlFile ), "List of input file(s) containing detected CNV from control")
 	("filter,f", po::value<int>( &filterSize ), "Minimum size for a CNV to be counted (0)")
     ("whole,w", "Whole mode. WARNING : Needs large amount of RAM")
-	("fast,f", "Fast mode. WARNING : experimental")
+	("fast,q", "Fast mode. WARNING : experimental")
 	("dict,d", po::value<string>( &dictFile ), "Dictionnary used to populate the chromosome list")
 	("suffix,s", po::value<string>( &suffix ), "Suffix to use for the output files (default : count")
 	("vcf", "VCF mode : input files are in VCF format according to vcf specification v4.7 (default)")
@@ -159,26 +159,27 @@ int main(int argc, char* argv[])
 
 	// configure file format
 	if (vm.count("vcf")) {
-	useVCFFormat = true;
-	useBEDFormat = false; 
+		useVCFFormat = true;
+		useBEDFormat = false; 
 	}
 	if (vm.count("bed")) {
-	useVCFFormat = false; 
-	useBEDFormat = true;
+		useVCFFormat = false; 
+		useBEDFormat = true;
 	}
 	App->setFormat(useVCFFormat , useBEDFormat);
 	if (vm.count("suffix")) {
-	App->setSuffix(suffix); 
+		App->setSuffix(suffix); 
 	}
 
 	// configure running mode and launch the appropriate loop
 	if( vm.count( "whole" ) ) {
-	App->altLoop();
+		App->altLoop();
 	} else {
-	if (vm.count("fast")) {
-		App->fastLoop();
-	}
-	App->mainLoop();
+		if (vm.count("fast")) {
+			App->fastLoop();
+		} else {
+			App->mainLoop();
+		}
 	}
 
 	// GC
