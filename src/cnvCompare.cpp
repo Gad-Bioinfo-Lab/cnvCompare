@@ -902,7 +902,10 @@ void cnvCompare::computeCountsFast() {
       long lastPoint = 0; 
       for (it = this->breakpoints[chromosome][value].find(start) ; it != next(this->breakpoints[chromosome][value].find(end), 1) ; ++it) {
         if (lastPoint != 0) {
-          total += (it->first - lastPoint) * lastValue;
+          total += ((it->first + 1) - lastPoint) * lastValue;
+        } else {
+          lastPoint = it->first;
+          lastValue = it->second; 
         }
       }
       double mean = total / (double)((end-start)+1);
