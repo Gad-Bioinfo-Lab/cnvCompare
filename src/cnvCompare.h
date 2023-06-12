@@ -56,6 +56,5 @@ class cnvCompare
 		std::string suffix;
 		std::string dictFile; 
 		bool hasDict; 
-
 };
 #endif
