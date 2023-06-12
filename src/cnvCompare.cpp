@@ -139,6 +139,7 @@ void cnvCompare::mainLoop() {
 
 /**
  * @brief Alt loop used to get data, and compute counts on the whole genome ; needs huge amount of RAM
+ *        Warning : this method is deprecated. Do not use. 
  * @param none
  * @return none
  **/
@@ -813,7 +814,7 @@ void cnvCompare::computeCountsWhole() {
 
 
 /**
- * @brief Method used to commpute counts with the fast on the whole genome
+ * @brief Method used to commpute counts with the fast on the whole genome : default method
  * @param none
  * @return none
  **/
