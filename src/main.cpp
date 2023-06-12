@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
 	("input,i",  po::value<string>( &inputFile ), "List of input file(s) containing detected CNV from samples")
 	("control,c",  po::value<string>( &inputControlFile ), "List of input file(s) containing detected CNV from control")
 	("filter,f", po::value<int>( &filterSize ), "Minimum size for a CNV to be counted (0)")
-    ("whole,w", "Whole mode. WARNING : Needs large amount of RAM")
+	("chrom,h", "Chromosome mode. Legacy mode in case of issue with the fast mode")
 	("fast,q", "Fast mode. WARNING : experimental")
 	("dict,d", po::value<string>( &dictFile ), "Dictionnary used to populate the chromosome list")
 	("suffix,s", po::value<string>( &suffix ), "Suffix to use for the output files (default : count")
@@ -171,14 +171,14 @@ int main(int argc, char* argv[])
 		App->setSuffix(suffix); 
 	}
 
-	// configure running mode and launch the appropriate loop
-	if( vm.count( "whole" ) ) {
+	// launching appropriate loop according to the options used
+	if( vm.count( "chrom" ) ) {
 		App->altLoop();
 	} else {
 		if (vm.count("fast")) {
 			App->fastLoop();
 		} else {
-			App->mainLoop();
+			App->fastLoop();
 		}
 	}
 
