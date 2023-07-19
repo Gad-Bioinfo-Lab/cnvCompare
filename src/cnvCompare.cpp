@@ -222,6 +222,7 @@ void cnvCompare::getDatabyChr(string incChr) {
     BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << "\t" << endl;
     this->nbFile++;
     long nbLigneFile = 0;
+    short nbOfConcernedIndividual = 0;
     while (getline(cnvStream, ligneCNV)) {
 
       // need to deal with header "#"
@@ -237,6 +238,7 @@ void cnvCompare::getDatabyChr(string incChr) {
       else
       {
         res = this->parseVCFLine(ligneCNV);
+        nbOfConcernedIndividual = string_to_int(res[5]);
       }
       
       // type conversion
@@ -519,22 +521,34 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
   string mot;
   string infomot;
   string info;
+  short GTindex = -1;
+  short CNindex = -1;
   short int i = 0;
+  double CNValue_d = 0.0; 
+  int CNValue_i = 0;
+  bool valueFound = false; 
+  bool passGT = false;
+  int nbOfConcernedIndiv = 0;
+  vector<short> counts(6, 0); 
   istringstream issInfo;
   temp["SVTYPE"] = "NONE";
+  vector<string> GTInfo;
 
   // get information from the line
   istringstream issLigne(incLine);
   i = 0;
   while (getline(issLigne, mot, '\t')) {
-    switch (i) {
-    case 0:
+    if (i == 0) {
       output.push_back(mot);
-      break;
-    case 1:
+      ++ i;
+      continue;
+    }
+    if (i == 1) {
       output.push_back(mot);
-      break;
-    case 7:
+      ++i;
+      continue;
+    }
+    if (i == 7) {
       info = mot;
       issInfo.str(info);
       while (getline(issInfo, infomot, ';')) {
@@ -546,11 +560,74 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
         }
         if (infomot.find("VALUE=") == 0) {
           temp["VALUE"] = parseOnSep(infomot, "=")[1];
+          valueFound = true;
         }
       }
-      break;
-    default:
-      break;
+      ++i; 
+      continue;
+    }
+    if (i == 8) {
+      // getting index for the GT field
+      GTInfo = parseOnSep(mot, ":");
+      for (long unsigned int n = 0 ; n <= GTInfo.size() ; n ++) {
+        if (GTInfo[n] == "GT") {
+          GTindex = n;
+        }
+        if (! valueFound) {
+          if (GTInfo[n] == "CN") {
+            CNindex = n;
+          }
+        }
+      }
+      ++i;
+      continue;
+    }
+    
+      // getting the non wild indiv 
+    if (i >= 9) {
+      // first checking if the GT field has been found
+      if (passGT) {
+        i++; 
+        continue;
+      }
+      if ((temp["SVTYPE"] != "DEL") and (temp["SVTYPE"] != "DUP")) {
+        break; 
+      }
+
+      if ((! valueFound) && (CNindex == -1)) {
+        passGT = true;
+        BOOST_LOG_TRIVIAL(info) << "No copy number value found on the VCF line " << incLine << " : passing it. Please check the VCF specifications" << endl;
+        break;
+      }
+      if (GTindex == -1) {
+        BOOST_LOG_TRIVIAL(info) << "No GT Found on the VCF line : counting only 1" << endl;
+        nbOfConcernedIndiv = 1;
+        passGT = true;
+        break;
+      } else {
+        string GT = parseOnSep(mot, ":")[GTindex];
+        BOOST_LOG_TRIVIAL(debug) << "\tGT Found : " << GT << endl;
+        if (GT != "0/0") {
+          // need to determine the copy level 
+          if (! valueFound) {
+            CNValue_d = stod(parseOnSep((parseOnSep(mot, ";")[CNindex]), "=")[1]);
+            CNValue_i = floor(CNValue_d + 0.5);
+            // not interested in cnv at n=2
+            if (CNValue_i == 2) {
+              ++i; 
+              continue; 
+            }
+            if (CNValue_i > 5) {
+              CNValue_i = 5;
+            }
+            counts[CNValue_i] += 1;
+          }
+          nbOfConcernedIndiv += 1;
+          BOOST_LOG_TRIVIAL(debug) << "\t\tadding 1 concerned individual : " << GT << endl;
+        }
+      } 
+      i++; 
+      continue;
     }
     i++;
   }
@@ -558,7 +635,23 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
   // add data to the vector from the temp map
   output.push_back(temp["END"]);
   output.push_back(temp["SVTYPE"]);
+  if (! valueFound) {
+    temp["VALUE"] = "-1";
+  }
   output.push_back(temp["VALUE"]);
+  output.push_back(int_to_string(nbOfConcernedIndiv));
+  BOOST_LOG_TRIVIAL(debug) << "\tNumber of concerned individual is " << nbOfConcernedIndiv << endl;
+  // transforming the counts vector into string 
+  output.push_back(int_to_string(counts[0]) + "," + int_to_string(counts[1]) + "," + int_to_string(counts[2]) + "," + int_to_string(counts[3]) + "," + int_to_string(counts[4]) + "," + int_to_string(counts[5]));
+
+
+  BOOST_LOG_TRIVIAL(debug) << "\tWill return output : " << endl;
+  vector <string>::iterator myIter; 
+  for (myIter = output.begin() ; myIter != output.end() ; myIter++ ) {
+    BOOST_LOG_TRIVIAL(debug) << "\t\t" << *myIter << endl; 
+  }
+  BOOST_LOG_TRIVIAL(debug) << "\n";
+
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::parseVCFLine " << endl;
   return output;
 }
@@ -597,7 +690,7 @@ void cnvCompare::getDataWhole() {
       // need to deal with header "#"
       if (ligneCNV.find(header) == 0)
       {
-        continue;
+        this->watchHeader(ligneCNV);
       }
       nbLigneFile++;
       vector<string> res;
@@ -897,19 +990,30 @@ void cnvCompare::computeCountsFast() {
       }
 
       // counts
+      BOOST_LOG_TRIVIAL(debug) << "Computing counts " << chromosome << ":" << start << "-" << end << ":" << s_type << value << endl;
       double total = 0;
       map<long, short>::iterator it; 
       short lastValue = 0; 
       long lastPoint = 0; 
       for (it = this->breakpoints[chromosome][value].find(start) ; it != next(this->breakpoints[chromosome][value].find(end), 1) ; ++it) {
+        BOOST_LOG_TRIVIAL(debug) << "\toutFileName is : " << outFileName << endl;
+
+        BOOST_LOG_TRIVIAL(debug) << "\tcurrent BP is " << it->first << ":" << it->second;
         if (lastPoint != 0) {
+          BOOST_LOG_TRIVIAL(debug) << "\t\tadding " << ((it->first + 1) - lastPoint) * lastValue;
           total += ((it->first + 1) - lastPoint) * lastValue;
+          BOOST_LOG_TRIVIAL(debug) << "\t\ttotal is now " << total;
+          lastPoint = it->first;
+          lastValue = it->second; 
         } else {
+          BOOST_LOG_TRIVIAL(debug) << "\t\tNot counting it";
           lastPoint = it->first;
           lastValue = it->second; 
         }
       }
+      
       double mean = total / (double)((end-start)+1);
+      BOOST_LOG_TRIVIAL(debug) << "\tMean = " << mean; 
 
       // need to adapt the output according to the choosen format
       if (this->getFormat() == "BED") {
@@ -919,7 +1023,7 @@ void cnvCompare::computeCountsFast() {
         } else {
           outStream << "DEL\t";
         }
-        outStream << value << "\t" << mean << "/" << this->getNbFile() << endl;
+        outStream << value << "\t" << mean << "/" << this->getNbIndividual() << endl;
       } else {
         // output VCF
         res = this->parseVCFLine(ligneCNV);
@@ -963,7 +1067,7 @@ void cnvCompare::computeCountsFast() {
             } else {
               outStream << "DEL;";
             }
-            outStream << "COUNT=" << mean << "/" << this->getNbFile();
+            outStream << "COUNT=" << mean << "/" << this->getNbIndividual();
             break;
           default:
             outStream << "\t" << mot;
@@ -999,6 +1103,8 @@ void cnvCompare::getDataFast() {
   string s_start;
   string s_end;
   string s_value;
+  vector <short> levelValues(6, 0); 
+  
 
   // tsv parsing
   map<string, string>::iterator myIterA;
@@ -1008,9 +1114,11 @@ void cnvCompare::getDataFast() {
     BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << "\t";
     this->nbFile++;
     long nbLigneFile = 0;
+    short nbOfConcernedIndividual = 0;
     while (getline(cnvStream, ligneCNV)) {
       // need to deal with header "#"
       if (ligneCNV.find(header) == 0) {
+        this->watchHeader(ligneCNV);
         continue;
       }
       nbLigneFile++;
@@ -1019,6 +1127,19 @@ void cnvCompare::getDataFast() {
         res = this->parseBEDLine(ligneCNV);
       } else {
         res = this->parseVCFLine(ligneCNV);
+
+        // check if the vcf parsing was ok
+        if (res.size() == 0) {
+          BOOST_LOG_TRIVIAL(error) << "\tParsing VCF line : " << ligneCNV << " failed, passing line"; 
+          continue; 
+        }
+        // pass if not del or dup 
+        if ((res[3] != "DEL") and (res[3] != "DUP")) {
+          BOOST_LOG_TRIVIAL(info) << "\tPassing VCF line : " << ligneCNV << " not DEL nor DUP, passing line"; 
+          continue;
+        }
+        
+        nbOfConcernedIndividual = string_to_int(res[5]);
       }
 
       // type conversion
@@ -1026,108 +1147,135 @@ void cnvCompare::getDataFast() {
       s_type = res[3];
       long start = string_to_int(res[1]);
       long end = string_to_int(res[2]);
-      unsigned int value = string_to_int(res[4]);
+      
 
       // size filter
       if ((end - start) < this->getFilterSize()) {
         continue;
       }
 
-      // value roofing 
+      // value management
+      unsigned int value = string_to_int(res[4]);
       if (value > 5) {
         value = 5;
       }
-
-      BOOST_LOG_TRIVIAL(debug) << "\t\twill insert : " << chromosome << ":" << start << "-" << end << " ; cnv : " << value;
-
-
-      // fill empty map if chr is not existing
-      if (!(this->breakpoints.count(chromosome) > 0)) {
-        BOOST_LOG_TRIVIAL(debug) << "\t\t\tCreating breakpoint map for this chromosome"; 
-        unordered_map<unsigned int, map<long, short> > tempMap;
-        this->breakpoints[chromosome] = tempMap;
-        map<long, short> tempList;
-        this->breakpoints[chromosome][0] = tempList;
-        this->breakpoints[chromosome][1] = tempList;
-        this->breakpoints[chromosome][2] = tempList;
-        this->breakpoints[chromosome][3] = tempList;
-        this->breakpoints[chromosome][4] = tempList;
-        this->breakpoints[chromosome][5] = tempList;
-      }
-
-      // look for the start / end values
-      // if the map is empty do not try to browse it, just insert the start and end values and treat the next line. 
-      if (this->breakpoints[chromosome][value].empty()) {
-        BOOST_LOG_TRIVIAL(debug) << "\t\t\tMap was empty : so just inserting start & end";
-        this->breakpoints[chromosome][value][start] = 1;
-        this->breakpoints[chromosome][value][end] = 0;
-        continue; 
-      }
-
-      // insert start and end values in the sorted map
-      short lastCount = 0;
-      map<long, short>::iterator it, inserted_it, it_beforestart, it_beforeend, it_afterstart, it_afterend;
-
-      // need to get old values
-      it_beforestart = breakpoints[chromosome][value].lower_bound(start);
-      it_beforeend = breakpoints[chromosome][value].lower_bound(end);
-
-      it_afterstart = breakpoints[chromosome][value].upper_bound(start);
-      it_afterend = breakpoints[chromosome][value].upper_bound(end);
       
-      if (it_beforestart != breakpoints[chromosome][value].end()) {
-        it_beforestart --;
-        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before start is " << it_beforestart->first << ":" << it_beforestart->second;
-      } else {
-        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before start is after the current end of the map";
-      }
-      if (it_beforeend != breakpoints[chromosome][value].end()) {
-        it_beforeend --;
-        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before end is " << it_beforeend->first << ":" << it_beforeend->second;
-      } else {
-        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before end is after the current end of the map";
-      }
-      if (it_afterstart != breakpoints[chromosome][value].end()) {
-        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after start is " << it_afterstart->first << ":" << it_afterstart->second;
-      } else {
-        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after start is after the current end of the map";
-      }
-      if (it_afterend != breakpoints[chromosome][value].end()) {
-        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after end is " << it_afterend->first << ":" << it_afterend->second;
-      } else {
-        BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after end is after the current end of the map";
+      levelValues[0] = string_to_int(parseOnSep(res[6], ",")[0]);
+      levelValues[1] = string_to_int(parseOnSep(res[6], ",")[1]);
+      levelValues[2] = string_to_int(parseOnSep(res[6], ",")[2]);
+      levelValues[3] = string_to_int(parseOnSep(res[6], ",")[3]);
+      levelValues[4] = string_to_int(parseOnSep(res[6], ",")[4]);
+      levelValues[5] = string_to_int(parseOnSep(res[6], ",")[5]);
+      
+      if (value != -1) {
+        levelValues[value] = 1;
       }
 
-      // manage begin of the map
-      if ((it_beforestart == breakpoints[chromosome][value].begin()) || (it_beforestart == breakpoints[chromosome][value].end())){
-        lastCount = 0;
-      } else {
-        lastCount =  it_beforestart->second;
-      }
 
-      // insert start point 
-      breakpoints[chromosome][value].insert_or_assign(start, lastCount + 1);
-      BOOST_LOG_TRIVIAL(debug) << "\t\tStart inserted " << start << ":" << lastCount+ 1;
+      for (int cn = 0 ; cn <= 5 ; cn ++) {
+        int count = 0; 
+        BOOST_LOG_TRIVIAL(debug) << "\tCnv values for this CNV ; cn = " <<  cn  << ", counts = " << levelValues[cn];
+        count = levelValues[cn]; 
+        if (count == 0) {
+          BOOST_LOG_TRIVIAL(debug) << "\t\tnothing to insert";
+          continue; 
+        }
+        
+        BOOST_LOG_TRIVIAL(debug) << "\t\twill insert : " << chromosome << ":" << start << "-" << end << " ; cnv : " << cn;
+        
+        // fill empty map if chr is not existing
+        if (!(this->breakpoints.count(chromosome) > 0)) {
+          BOOST_LOG_TRIVIAL(debug) << "\t\t\tCreating breakpoint map for this chromosome"; 
+          unordered_map<unsigned int, map<long, short> > tempMap;
+          this->breakpoints[chromosome] = tempMap;
+          map<long, short> tempList;
+          this->breakpoints[chromosome][0] = tempList;
+          this->breakpoints[chromosome][1] = tempList;
+          this->breakpoints[chromosome][2] = tempList;
+          this->breakpoints[chromosome][3] = tempList;
+          this->breakpoints[chromosome][4] = tempList;
+          this->breakpoints[chromosome][5] = tempList;
+        }
 
-      // get last value of the interval & manage end of the map
-      if (it_beforeend == breakpoints[chromosome][value].end()) {
-        lastCount = 0;
-      } else {
-        lastCount =  it_beforeend->second;
-      }
+        // look for the start / end values
+        // if the map is empty do not try to browse it, just insert the start and end values and treat the next line. 
+        if (this->breakpoints[chromosome][cn].empty()) {
+          BOOST_LOG_TRIVIAL(debug) << "\t\t\tMap was empty : so just inserting start & end";
+          this->breakpoints[chromosome][cn][start] = 1;
+          this->breakpoints[chromosome][cn][end] = 0;
+          continue; 
+        }
 
-      // modify all value until end
-      for (it = it_afterstart ; it != it_afterend ; ++ it) {
-        if (it != breakpoints[chromosome][value].end()) {
-          breakpoints[chromosome][value][it->first] += 1;
-          BOOST_LOG_TRIVIAL(debug) << "\t\tChanging breakpoints " << it->first << ":" << breakpoints[chromosome][value][it->first] - 1 << " to " << breakpoints[chromosome][value][it->first];
+        // insert start and end values in the sorted map
+        short lastCount = 0;
+        map<long, short>::iterator it, inserted_it, it_beforestart, it_beforeend, it_afterstart, it_afterend;
+
+        // need to get old values
+        it_beforestart = breakpoints[chromosome][cn].lower_bound(start);
+        it_beforeend = breakpoints[chromosome][cn].lower_bound(end);
+
+        it_afterstart = breakpoints[chromosome][cn].upper_bound(start);
+        it_afterend = breakpoints[chromosome][cn].upper_bound(end);
+        
+        if (it_beforestart != breakpoints[chromosome][cn].end()) {
+          it_beforestart --;
+          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before start is " << it_beforestart->first << ":" << it_beforestart->second;
+        } else {
+          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before start is after the current end of the map";
+        }
+        if (it_beforeend != breakpoints[chromosome][cn].end()) {
+          it_beforeend --;
+          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before end is " << it_beforeend->first << ":" << it_beforeend->second;
+        } else {
+          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before end is after the current end of the map";
+        }
+        if (it_afterstart != breakpoints[chromosome][cn].end()) {
+          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after start is " << it_afterstart->first << ":" << it_afterstart->second;
+        } else {
+          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after start is after the current end of the map";
+        }
+        if (it_afterend != breakpoints[chromosome][cn].end()) {
+          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after end is " << it_afterend->first << ":" << it_afterend->second;
+        } else {
+          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after end is after the current end of the map";
+        }
+
+        // manage begin of the map
+        if ((it_beforestart == breakpoints[chromosome][cn].begin()) || (it_beforestart == breakpoints[chromosome][cn].end())){
+          lastCount = 0;
+        } else {
+          lastCount =  it_beforestart->second;
+        }
+
+        // insert start point 
+        breakpoints[chromosome][cn].insert_or_assign(start, lastCount + count);
+        BOOST_LOG_TRIVIAL(debug) << "\t\tStart inserted " << start << ":" << lastCount + count << " at cn level " << cn;
+
+        // get last value of the interval & manage end of the map
+        if (it_beforeend == breakpoints[chromosome][cn].end()) {
+          lastCount = 0;
+        } else {
+          lastCount =  it_beforeend->second;
+        }
+
+        // modify all value until end
+        for (it = it_afterstart ; it != it_afterend ; ++ it) {
+          if (it != breakpoints[chromosome][cn].end()) {
+            breakpoints[chromosome][cn][it->first] += count;
+            BOOST_LOG_TRIVIAL(debug) << "\t\tChanging breakpoints " << it->first << ":" << breakpoints[chromosome][cn][it->first] - count << " to " << breakpoints[chromosome][cn][it->first] << " at cn level " << cn;
+          }
+        }
+
+        // insert the end 
+        breakpoints[chromosome][value].insert_or_assign(end, lastCount);
+        BOOST_LOG_TRIVIAL(debug) << "\t\tEnd inserted " << end << ":" << lastCount << " at cn level " << cn;
+        BOOST_LOG_TRIVIAL(debug) << "\t\tSize of breakpoints at chr : " << chromosome << " and value " << value << " : " << breakpoints[chromosome][cn].size();
+
+        // a count for large files to be sure that everything went well
+        if ((nbLigneFile % 10000) == 0) {
+          BOOST_LOG_TRIVIAL(info) << "\t" << nbLigneFile << " events detected, still in progress" << endl;
         }
       }
-
-      // insert the end 
-      breakpoints[chromosome][value].insert_or_assign(end, lastCount);
-      BOOST_LOG_TRIVIAL(debug) << "\t\tEnd inserted " << end << ":" << lastCount;
-      BOOST_LOG_TRIVIAL(debug) << "\t\tSize of breakpoints at chr : " << chromosome << " and value " << value << " : " << breakpoints[chromosome][value].size();
     }
     BOOST_LOG_TRIVIAL(info) << " with " << nbLigneFile << " events detected " << endl;
   }
@@ -1194,8 +1342,9 @@ int cnvCompare::fillMap(string incFile, string status) {
       this->fileMap[ligne] = status;
     }
   }
-  return this->nbFile;
+  
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::fillMap " << endl;
+  return this->nbFile;
 }
 
 
@@ -1343,4 +1492,36 @@ void cnvCompare::setHasDict(bool incBool) {
   BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::setHasDict " << endl;
   this->hasDict = incBool;
   BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::setHasDict " << endl;
+}
+
+
+/**
+ * @brief Getter for number of individuals (different from number of files)
+ * @param none
+ * @return short value : the number of individual in memory
+ **/
+short int cnvCompare::getNbIndividual() {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getNbIndividual " << endl;
+  return this->nbIndividual;
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getNbIndividual " << endl;
+}
+
+/**
+ * @brief Method used to get the number of individuals on a header line for a VCF
+ * @param incLine : A string containing the header line
+ * @return none
+ **/
+void cnvCompare::watchHeader(string incLine) {
+  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::watchHeader " << endl;
+  string goodHeader = "#CHR"; 
+  short initIndiv = this->getNbIndividual();
+  if (incLine.find(goodHeader) == 0) {
+    vector<string> lineTable = parseOnSep(incLine, "\t");
+    for (long unsigned int n = 9 ; n < lineTable.size() ; n ++) {
+      this->nbIndividual += 1;
+    }
+    BOOST_LOG_TRIVIAL(info) << "Added " << this->getNbIndividual() - initIndiv << " individuals to the list, total is now : " << this->getNbIndividual() << endl;
+  }
+
+  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::watchHeader" << endl;
 }
