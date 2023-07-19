@@ -23,6 +23,7 @@ class cnvCompare
 		void computeCountsFast();
 		void cleanData();
 		short int getNbFile();
+		short int getNbIndividual();
 		int fillMap(std::string, std::string); 
 		std::string getControlFile();
 		std::string getInputFile();
@@ -47,6 +48,7 @@ class cnvCompare
 		std::unordered_map<std::string, std::unordered_map<unsigned int, std::map<long, short> > > breakpoints; 
 		std::vector<std::string> chromosomeMap;
 		short int nbFile = 0;
+		short int nbIndividual = 0;
 		bool useControls = false; 
 		std::map<std::string, std::string> fileMap; 
 		int filterSize;
@@ -56,5 +58,6 @@ class cnvCompare
 		std::string suffix;
 		std::string dictFile; 
 		bool hasDict; 
+		void watchHeader(std::string);
 };
 #endif
