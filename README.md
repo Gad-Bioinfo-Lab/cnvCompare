@@ -75,3 +75,9 @@ Licensed under the AGPLv3: https://opensource.org/licenses/agpl-3.0
 
 ## Citing 
 NYI
+
+## TroubleShootng
+- Counts are superior to my sample number, how is that possible ? 
+A lot of possibilities, but first check if your intervals are merged : cnvcallers can possibly call overlapping events at the same copy level. If it's the case additionnal counts are added for the involved breakpoints. 
+Secondly, please note that duplication levels are cut at n=5 (meaning that if you get a cn level at 6 or 7 or 8 or more, it's turned to 5) So if you have overlapping events at level copy superior to 5, it would be counted as if it was not merged. 
+We are working on an automatic detection of these cases, and a correction, but it's still in development. 
