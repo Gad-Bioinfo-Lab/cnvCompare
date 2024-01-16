@@ -607,7 +607,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       } else {
         string GT = parseOnSep(mot, ":")[GTindex];
         BOOST_LOG_TRIVIAL(debug) << "\tGT Found : " << GT << endl;
-        if (GT != "0/0") {
+        if ((GT != "0/0") and (GT != "0|0")) {
           // need to determine the copy level 
           if (! valueFound) {
             CNValue_d = stod(parseOnSep((parseOnSep(mot, ";")[CNindex]), "=")[1]);
@@ -748,7 +748,7 @@ void cnvCompare::getDataWhole() {
 }
 
 /**
- * @brief Method used to commpute counts from in memory data on the whole genome
+ * @brief Method used to commpute counts from data in memory on the whole genome
  * @param none
  * @return none
  **/
