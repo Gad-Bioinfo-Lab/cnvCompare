@@ -46,6 +46,8 @@ class cnvCompare
 		std::unordered_map< std::string , std::unordered_map< unsigned int , std::unordered_map<long, short> > > data;
 		std::unordered_map<unsigned int , std::unordered_map<long, short> > dataByChr;
 		std::unordered_map<std::string, std::unordered_map<unsigned int, std::map<long, short> > > breakpoints; 
+		std::unordered_map<std::string, std::unordered_map<unsigned int, std::map<long, short> > > invbreakpoints; 
+		std::unordered_map<std::string, std::unordered_map<unsigned int, std::map<long, short> > > trnbreakpoints; 
 		std::vector<std::string> chromosomeMap;
 		short int nbFile = 0;
 		short int nbIndividual = 0;
