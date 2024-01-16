@@ -572,10 +572,12 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       for (long unsigned int n = 0 ; n <= GTInfo.size() ; n ++) {
         if (GTInfo[n] == "GT") {
           GTindex = n;
+          BOOST_LOG_TRIVIAL(debug) << "GT index was found : " << GTindex << endl; 
         }
         if (! valueFound) {
           if (GTInfo[n] == "CN") {
             CNindex = n;
+            BOOST_LOG_TRIVIAL(debug) << "CN index was found : " << GTindex << endl; 
           }
         }
       }
