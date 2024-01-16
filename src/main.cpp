@@ -42,7 +42,7 @@ namespace sinks = boost::log::sinks;
 // logging initiation function 
 void init_logging() {
 	logging::add_file_log(keywords::file_name ="cnvCompare_%N.log" , keywords::format = "[%TimeStamp%]: %Message%");
-	logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::info);
+	logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::debug);
 }
 
 // signal handler to leave properly if seg fault, or interruption. 
