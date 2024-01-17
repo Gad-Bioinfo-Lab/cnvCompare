@@ -1137,7 +1137,7 @@ void cnvCompare::getDataFast() {
         }
         // pass if not del or dup 
         if ((res[3] != "DEL") and (res[3] != "DUP")) {
-          BOOST_LOG_TRIVIAL(info) << "\tPassing VCF line : not DEL nor DUP, passing line"; 
+          BOOST_LOG_TRIVIAL(debug) << "\tPassing VCF line : not DEL nor DUP, passing line"; 
           continue;
         }
         
