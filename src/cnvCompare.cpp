@@ -609,10 +609,10 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       } else {
         string GT = parseOnSep(mot, ":")[GTindex];
         BOOST_LOG_TRIVIAL(debug) << "\tGT Found : " << GT << endl;
-        if ((GT != "0/0") and (GT != "0|0")) {
+        if (GT != "./.") {
           // need to determine the copy level 
           if (! valueFound) {
-            CNValue_d = stod(parseOnSep((parseOnSep(mot, ";")[CNindex]), "=")[1]);
+            CNValue_d = stod((parseOnSep(mot, ";")[CNindex]));
             CNValue_i = floor(CNValue_d + 0.5);
             // not interested in cnv at n=2
             if (CNValue_i == 2) {
@@ -625,7 +625,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
             counts[CNValue_i] += 1;
           }
           nbOfConcernedIndiv += 1;
-          BOOST_LOG_TRIVIAL(debug) << "\t\tadding 1 concerned individual : " << GT << endl;
+          BOOST_LOG_TRIVIAL(debug) << "\t\tadding 1 concerned individual with GT : " << GT << endl;
         }
       } 
       i++; 
@@ -1137,7 +1137,7 @@ void cnvCompare::getDataFast() {
         }
         // pass if not del or dup 
         if ((res[3] != "DEL") and (res[3] != "DUP")) {
-          BOOST_LOG_TRIVIAL(info) << "\tPassing VCF line : " << ligneCNV << " not DEL nor DUP, passing line"; 
+          BOOST_LOG_TRIVIAL(info) << "\tPassing VCF line : not DEL nor DUP, passing line"; 
           continue;
         }
         
