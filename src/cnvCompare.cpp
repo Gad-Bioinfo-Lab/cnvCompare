@@ -612,7 +612,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
         if (GT != "./.") {
           // need to determine the copy level 
           if (! valueFound) {
-            CNValue_d = stod((parseOnSep(mot, ";")[CNindex]));
+            CNValue_d = stod((parseOnSep(mot, ":")[CNindex]));
             CNValue_i = floor(CNValue_d + 0.5);
             // not interested in cnv at n=2
             if (CNValue_i == 2) {
