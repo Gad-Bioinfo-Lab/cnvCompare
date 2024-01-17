@@ -5,7 +5,7 @@ project(cnvCompare VERSION 1.4.1)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a -O3 -Wall -DBOOST_LOG_DYN_LINK -g"  CACHE STRING "Set C++ Compiler Flags" FORCE)
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a -O3 -Wall -DBOOST_LOG_DYN_LINK"  CACHE STRING "Set C++ Compiler Flags" FORCE)
 
 find_package(Boost 1.46.1 REQUIRED COMPONENTS program_options)
 # check if boost was found
