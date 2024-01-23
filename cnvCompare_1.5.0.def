@@ -1,0 +1,49 @@
+BootStrap: docker
+From: centos:8
+
+%help
+This is a singularity container packing the cnvComapre software in version 3.7.1 and all the dedicated environnement set up for a proper usage
+Author : yannis.duffourd@u-bourgogne.fr
+This singularity recipe is open source and free. Please redistribute it as well.
+No warranty is provided.
+cnvCompare sources are installed in /opt/cnvCompare_src
+cnvCompare build is in /opt/cnvCompare_build
+
+
+%setup
+mkdir ${SINGULARITY_ROOTFS}/data
+
+%post
+sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+
+yum update -y
+yum install -y epel-release
+
+mkdir /opt/cnvCompare_build /opt/cnvCompare_src
+
+# system libs
+yum groupinstall -y development
+yum install -y boost.x86_64 boost-program-options.x86_64 cmake.x86_64 boost-devel
+
+# install cnvCompare
+cd /opt/cnvCompare_src
+git clone https://github.com/Gad-Bioinfo-Lab/cnvCompare.git
+cd /opt/cnvCompare_build
+cmake /opt/cnvCompare_src/cnvCompare/
+make
+cp cnvCompare /usr/bin/
+
+%labels
+Maintainer Yannis Duffourd
+Updater Yannis Duffourd <yannis.duffourd@u-bourgogne.fr>
+ContainerVersion v1.0
+Software cnvCompare 1.5.0
+
+%environment
+
+
+
+
+%runscript
+echo "OK"
