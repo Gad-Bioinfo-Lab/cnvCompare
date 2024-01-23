@@ -572,12 +572,12 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       for (long unsigned int n = 0 ; n <= GTInfo.size() ; n ++) {
         if (GTInfo[n] == "GT") {
           GTindex = n;
-          BOOST_LOG_TRIVIAL(debug) << "GT index was found : " << GTindex << endl; 
+          BOOST_LOG_TRIVIAL(trace) << "GT index was found : " << GTindex << endl; 
         }
         if (! valueFound) {
           if (GTInfo[n] == "CN") {
             CNindex = n;
-            BOOST_LOG_TRIVIAL(debug) << "CN index was found : " << GTindex << endl; 
+            BOOST_LOG_TRIVIAL(trace) << "CN index was found : " << GTindex << endl; 
           }
         }
       }
@@ -608,7 +608,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
         break;
       } else {
         string GT = parseOnSep(mot, ":")[GTindex];
-        BOOST_LOG_TRIVIAL(debug) << "\tGT Found : " << GT << endl;
+        BOOST_LOG_TRIVIAL(trace) << "\tGT Found : " << GT << endl;
         if (GT != "./.") {
           // need to determine the copy level 
           if (! valueFound) {
@@ -625,7 +625,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
             counts[CNValue_i] += 1;
           }
           nbOfConcernedIndiv += 1;
-          BOOST_LOG_TRIVIAL(debug) << "\t\tadding 1 concerned individual with GT : " << GT << endl;
+          BOOST_LOG_TRIVIAL(trace) << "\t\tadding 1 concerned individual with GT : " << GT << endl;
         }
       } 
       i++; 
@@ -647,7 +647,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
   output.push_back(int_to_string(counts[0]) + "," + int_to_string(counts[1]) + "," + int_to_string(counts[2]) + "," + int_to_string(counts[3]) + "," + int_to_string(counts[4]) + "," + int_to_string(counts[5]));
 
 
-  BOOST_LOG_TRIVIAL(debug) << "\tWill return output : " << endl;
+  BOOST_LOG_TRIVIAL(debug) << "\tWill return output from VCF line : " << endl;
   vector <string>::iterator myIter; 
   for (myIter = output.begin() ; myIter != output.end() ; myIter++ ) {
     BOOST_LOG_TRIVIAL(debug) << "\t\t" << *myIter << endl; 
@@ -847,7 +847,7 @@ void cnvCompare::computeCountsWhole() {
         } else {
           outStream << "DEL\t";
         }
-        outStream << value << "\t" << mean << "/" << this->getNbFile() << endl;
+        outStream << value << "\t" << floor(mean) << "/" << this->getNbFile() << endl;
       } else {
         // output VCF
         res = this->parseVCFLine(ligneCNV);
@@ -891,7 +891,7 @@ void cnvCompare::computeCountsWhole() {
             } else {
               outStream << "DEL;";
             }
-            outStream << "COUNT=" << mean << "/" << this->getNbFile();
+            outStream << "COUNT=" << floor(mean) << "/" << this->getNbFile();
             break;
           default:
             outStream << "\t" << mot;
@@ -997,9 +997,8 @@ void cnvCompare::computeCountsFast() {
       map<long, short>::iterator it; 
       short lastValue = 0; 
       long lastPoint = 0; 
+      BOOST_LOG_TRIVIAL(debug) << "\toutFileName is : " << outFileName << endl;
       for (it = this->breakpoints[chromosome][value].find(start) ; it != next(this->breakpoints[chromosome][value].find(end), 1) ; ++it) {
-        BOOST_LOG_TRIVIAL(debug) << "\toutFileName is : " << outFileName << endl;
-
         BOOST_LOG_TRIVIAL(debug) << "\tcurrent BP is " << it->first << ":" << it->second;
         if (lastPoint != 0) {
           BOOST_LOG_TRIVIAL(debug) << "\t\tadding " << ((it->first + 1) - lastPoint) * lastValue;
@@ -1069,7 +1068,7 @@ void cnvCompare::computeCountsFast() {
             } else {
               outStream << "DEL;";
             }
-            outStream << "COUNT=" << mean << "/" << this->getNbIndividual();
+            outStream << "COUNT=" << floor(mean) << "/" << this->getNbIndividual();
             break;
           default:
             outStream << "\t" << mot;
@@ -1157,7 +1156,8 @@ void cnvCompare::getDataFast() {
       }
 
       // value management
-      unsigned int value = string_to_int(res[4]);
+      int value = string_to_int(res[4]);
+      BOOST_LOG_TRIVIAL(trace) << "\tCnv single value for this CNV is " << value;
       if (value > 5) {
         value = 5;
       }
@@ -1168,6 +1168,7 @@ void cnvCompare::getDataFast() {
       levelValues[3] = string_to_int(parseOnSep(res[6], ",")[3]);
       levelValues[4] = string_to_int(parseOnSep(res[6], ",")[4]);
       levelValues[5] = string_to_int(parseOnSep(res[6], ",")[5]);
+
       
       if (value != -1) {
         levelValues[value] = 1;
@@ -1187,7 +1188,7 @@ void cnvCompare::getDataFast() {
         
         // fill empty map if chr is not existing
         if (!(this->breakpoints.count(chromosome) > 0)) {
-          BOOST_LOG_TRIVIAL(debug) << "\t\t\tCreating breakpoint map for this chromosome"; 
+          BOOST_LOG_TRIVIAL(trace) << "\t\t\tCreating breakpoint map for this chromosome"; 
           unordered_map<unsigned int, map<long, short> > tempMap;
           this->breakpoints[chromosome] = tempMap;
           map<long, short> tempList;
@@ -1202,7 +1203,7 @@ void cnvCompare::getDataFast() {
         // look for the start / end values
         // if the map is empty do not try to browse it, just insert the start and end values and treat the next line. 
         if (this->breakpoints[chromosome][cn].empty()) {
-          BOOST_LOG_TRIVIAL(debug) << "\t\t\tMap was empty : so just inserting start & end";
+          BOOST_LOG_TRIVIAL(trace) << "\t\t\tMap was empty : so just inserting start & end";
           this->breakpoints[chromosome][cn][start] = 1;
           this->breakpoints[chromosome][cn][end] = 0;
           continue; 
@@ -1221,25 +1222,25 @@ void cnvCompare::getDataFast() {
         
         if (it_beforestart != breakpoints[chromosome][cn].end()) {
           it_beforestart --;
-          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before start is " << it_beforestart->first << ":" << it_beforestart->second;
+          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint before start is " << it_beforestart->first << ":" << it_beforestart->second;
         } else {
-          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before start is after the current end of the map";
+          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint before start is after the current end of the map";
         }
         if (it_beforeend != breakpoints[chromosome][cn].end()) {
           it_beforeend --;
-          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before end is " << it_beforeend->first << ":" << it_beforeend->second;
+          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint before end is " << it_beforeend->first << ":" << it_beforeend->second;
         } else {
-          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint before end is after the current end of the map";
+          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint before end is after the current end of the map";
         }
         if (it_afterstart != breakpoints[chromosome][cn].end()) {
-          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after start is " << it_afterstart->first << ":" << it_afterstart->second;
+          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint after start is " << it_afterstart->first << ":" << it_afterstart->second;
         } else {
-          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after start is after the current end of the map";
+          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint after start is after the current end of the map";
         }
         if (it_afterend != breakpoints[chromosome][cn].end()) {
-          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after end is " << it_afterend->first << ":" << it_afterend->second;
+          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint after end is " << it_afterend->first << ":" << it_afterend->second;
         } else {
-          BOOST_LOG_TRIVIAL(debug) << "\t\tBreakpoint after end is after the current end of the map";
+          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint after end is after the current end of the map";
         }
 
         // manage begin of the map
@@ -1251,7 +1252,7 @@ void cnvCompare::getDataFast() {
 
         // insert start point 
         breakpoints[chromosome][cn].insert_or_assign(start, lastCount + count);
-        BOOST_LOG_TRIVIAL(debug) << "\t\tStart inserted " << start << ":" << lastCount + count << " at cn level " << cn;
+        BOOST_LOG_TRIVIAL(trace) << "\t\tStart inserted " << start << ":" << lastCount + count << " at cn level " << cn;
 
         // get last value of the interval & manage end of the map
         if (it_beforeend == breakpoints[chromosome][cn].end()) {
@@ -1264,14 +1265,14 @@ void cnvCompare::getDataFast() {
         for (it = it_afterstart ; it != it_afterend ; ++ it) {
           if (it != breakpoints[chromosome][cn].end()) {
             breakpoints[chromosome][cn][it->first] += count;
-            BOOST_LOG_TRIVIAL(debug) << "\t\tChanging breakpoints " << it->first << ":" << breakpoints[chromosome][cn][it->first] - count << " to " << breakpoints[chromosome][cn][it->first] << " at cn level " << cn;
+            BOOST_LOG_TRIVIAL(trace) << "\t\tChanging breakpoints " << it->first << ":" << breakpoints[chromosome][cn][it->first] - count << " to " << breakpoints[chromosome][cn][it->first] << " at cn level " << cn;
           }
         }
 
         // insert the end 
         breakpoints[chromosome][value].insert_or_assign(end, lastCount);
-        BOOST_LOG_TRIVIAL(debug) << "\t\tEnd inserted " << end << ":" << lastCount << " at cn level " << cn;
-        BOOST_LOG_TRIVIAL(debug) << "\t\tSize of breakpoints at chr : " << chromosome << " and value " << value << " : " << breakpoints[chromosome][cn].size();
+        BOOST_LOG_TRIVIAL(trace) << "\t\tEnd inserted " << end << ":" << lastCount << " at cn level " << cn;
+        BOOST_LOG_TRIVIAL(trace) << "\t\tSize of breakpoints at chr : " << chromosome << " and value " << cn << " : " << breakpoints[chromosome][cn].size();
 
         // a count for large files to be sure that everything went well
         if ((nbLigneFile % 10000) == 0) {
