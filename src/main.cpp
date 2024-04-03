@@ -15,14 +15,12 @@
 
 // C++ Boost
 #include <boost/program_options.hpp>
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/utility/setup/file.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
-#include <boost/log/sinks/text_file_backend.hpp>
-#include <boost/log/sources/severity_logger.hpp>
-#include <boost/log/sources/record_ostream.hpp>
+
+// logs 
+#include <plog/Log.h>
+#include <plog/Initializers/RollingFileInitializer.h>
+
+
 
 // utils
 #include "utils.h"
@@ -34,15 +32,11 @@
 using namespace std;
 using namespace boost;
 namespace po = boost::program_options;
-namespace logging = boost::log;
-namespace keywords = boost::log::keywords;
-namespace src = boost::log::sources;
-namespace sinks = boost::log::sinks;
+
 
 // logging initiation function 
 void init_logging() {
-	logging::add_file_log(keywords::file_name ="cnvCompare_%N.log" , keywords::format = "[%TimeStamp%]: %Message%");
-	logging::core::get()->set_filter(logging::trivial::severity >= logging::trivial::info);
+	plog::init(plog::debug, "cnvCompare.log");
 }
 
 // signal handler to leave properly if seg fault, or interruption. 
@@ -63,7 +57,7 @@ int main(int argc, char* argv[]) {
 
 	// logging start
 	init_logging();
-  	BOOST_LOG_TRIVIAL(trace) << "Starting Main" << endl;
+	PLOG(plog::verbose) << "Starting Main (plog)";
 
 	// decla
 	bool useVCFFormat = true; 
@@ -83,7 +77,7 @@ int main(int argc, char* argv[]) {
 	("input,i",  po::value<string>( &inputFile ), "List of input file(s) containing detected CNV from samples")
 	("control,c",  po::value<string>( &inputControlFile ), "List of input file(s) containing detected CNV from control")
 	("filter,f", po::value<int>( &filterSize ), "Minimum size for a CNV to be counted (0)")
-	("chrom,h", "Chromosome mode. Legacy mode in case of issue with the fast mode")
+	("chrom,x", "Chromosome mode. Legacy mode in case of issue with the fast mode")
 	("fast,q", "Fast mode. (default)")
 	("dict,d", po::value<string>( &dictFile ), "Dictionnary used to populate the chromosome list")
 	("suffix,s", po::value<string>( &suffix ), "Suffix to use for the output files (default : count")
@@ -137,7 +131,7 @@ int main(int argc, char* argv[]) {
 		App = new cnvCompare(inputFile, inputControlFile, 1, filterSize);
 	} else {
 		App = new cnvCompare(inputFile, 1, filterSize);
-		BOOST_LOG_TRIVIAL(warning) << "No file provided as input control file" << endl;
+		PLOG(plog::warning) << "No file provided as input control file" << endl;
 	}
 
 	// deal with the dict option
@@ -188,6 +182,6 @@ int main(int argc, char* argv[]) {
 
 	// GC
 	delete App;
-	BOOST_LOG_TRIVIAL(trace) << "end of main" << endl;
+	PLOG(plog::verbose) << "end of main";
 	return 0;
 }
