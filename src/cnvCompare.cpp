@@ -16,13 +16,16 @@
 #include <iomanip>
 #include <unordered_map>
 #include <filesystem>
+#include <cmath>
 //#include <ranges>
 
 // Boost 
-#include <boost/log/trivial.hpp>
-#include <boost/log/utility/setup/file.hpp>
-#include <boost/log/expressions.hpp>
 #include <boost/filesystem/path.hpp>
+
+// plog 
+#include <plog/Log.h>
+#include <plog/Initializers/RollingFileInitializer.h>
+
 
 // utils
 #include "utils.h"
@@ -33,7 +36,6 @@
 // namespaces
 using namespace std;
 using namespace boost;
-namespace logging = boost::log;
 namespace fs = boost::filesystem;
 
 /**
@@ -42,8 +44,8 @@ namespace fs = boost::filesystem;
  * @return none
  **/
 cnvCompare::cnvCompare() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cnvCompare default constructor" << endl;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cnvCompare default constructor" << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::cnvCompare default constructor" << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::cnvCompare default constructor" << endl;
 }
 
 
@@ -55,12 +57,12 @@ cnvCompare::cnvCompare() {
  * @return none
  **/
 cnvCompare::cnvCompare(string iF, int nT, int s) {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cnvCompare (string, int, int) Ctor" << endl;
-  BOOST_LOG_TRIVIAL(trace) <<  "cnvCompare constructor called";
-  BOOST_LOG_TRIVIAL(trace) <<  "sizeof(char) = " << sizeof(char);
-  BOOST_LOG_TRIVIAL(trace) <<  "sizeof(string) = " << sizeof(string);
-  BOOST_LOG_TRIVIAL(trace) <<  "sizeof(int32_t) = " << sizeof(int32_t);
-  BOOST_LOG_TRIVIAL(trace) <<  "sizeof(int) = " << sizeof(int);
+  PLOG(plog::verbose) << "Entering cnvCompare::cnvCompare (string, int, int) Ctor" << endl;
+  PLOG(plog::verbose) <<  "cnvCompare constructor called";
+  PLOG(plog::verbose) <<  "sizeof(char) = " << sizeof(char);
+  PLOG(plog::verbose) <<  "sizeof(string) = " << sizeof(string);
+  PLOG(plog::verbose) <<  "sizeof(int32_t) = " << sizeof(int32_t);
+  PLOG(plog::verbose) <<  "sizeof(int) = " << sizeof(int);
   
   // init of the needed class members
   this->inputFile = iF;
@@ -70,7 +72,7 @@ cnvCompare::cnvCompare(string iF, int nT, int s) {
   this->suffix = "count";
   // Adding sample files 
   int n = this->fillMap(iF, "sample");
-  BOOST_LOG_TRIVIAL(info) << n << " files added to sample list" << endl;
+  PLOG(plog::info) << n << " files added to sample list" << endl;
   // populating chromosome either by parsing the dict of with a default human map
   if (this->hasDict) {
     this->parseDictFile(this->getDictFile());
@@ -78,10 +80,10 @@ cnvCompare::cnvCompare(string iF, int nT, int s) {
   } else {
     int ret = this->populateChr();
     if (ret != 0) {
-      BOOST_LOG_TRIVIAL(error) << "Chromosome population couldn't be filled in" << endl;
+      PLOG(plog::error) << "Chromosome population couldn't be filled in" << endl;
     }
   }
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cnvCompare (string, int, int) Ctor" << endl; 
+  PLOG(plog::verbose) << "Leaving cnvCompare::cnvCompare (string, int, int) Ctor" << endl; 
 }
 
 /**
@@ -93,7 +95,7 @@ cnvCompare::cnvCompare(string iF, int nT, int s) {
  * @return none
  **/
 cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cnvCompare (string, string, int, int) Ctor" << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::cnvCompare (string, string, int, int) Ctor" << endl;
   // init of the needed class members
   this->inputFile = iF;
   this->controlFile = cF;
@@ -103,19 +105,19 @@ cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
   this->suffix = "count";
   // Adding sample files & control files
   int n = this->fillMap(iF, "sample");
-  BOOST_LOG_TRIVIAL(info) << n << " files added to sample list" << endl;
+  PLOG(plog::info) << n << " files added to sample list" << endl;
   int m = this->fillMap(cF, "control");
-  BOOST_LOG_TRIVIAL(info) << m << " files added to control list" << endl;
+  PLOG(plog::info) << m << " files added to control list" << endl;
   // populating chromosome either by parsing the dict of with a default human map
   if (this->hasDict) {
     this->parseDictFile(this->getDictFile());
   } else {
     int ret = this->populateChr();
     if (ret != 0) {
-      BOOST_LOG_TRIVIAL(error) << "Chromosome population couldn't be filled in" << endl;
+      PLOG(plog::error) << "Chromosome population couldn't be filled in" << endl;
     }
   }
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cnvCompare (string, string, int, int) Ctor" << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::cnvCompare (string, string, int, int) Ctor" << endl;
 }
 
 
@@ -125,7 +127,7 @@ cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
  * @return none
  **/
 void cnvCompare::mainLoop() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::mainLoop " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::mainLoop ";
   for (auto &a : this->chromosomeMap) {
     // getting data
     this->getDatabyChr(a);
@@ -134,7 +136,7 @@ void cnvCompare::mainLoop() {
     // GC 
     this->cleanData();
   }
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::mainLoop " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::mainLoop ";
 }
 
 /**
@@ -144,14 +146,14 @@ void cnvCompare::mainLoop() {
  * @return none
  **/
 void cnvCompare::altLoop() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::altLoop " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::altLoop ";
   // getting data
   this->getDataWhole();
   // computing counts 
   this->computeCountsWhole();
   // GC 
   this->cleanData();
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::altLoop " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::altLoop ";
 }
 
 /**
@@ -160,14 +162,14 @@ void cnvCompare::altLoop() {
  * @return none
  **/
 void cnvCompare::fastLoop() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::fastLoop " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::fastLoop ";
   // getting data
   this->getDataFast();
   // computing counts 
   this->computeCountsFast();
   // GC 
   this->cleanData();
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::fastLoop " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::fastLoop ";
 }
 
 
@@ -177,11 +179,11 @@ void cnvCompare::fastLoop() {
  * @return none
  **/
 void cnvCompare::cleanData() { 
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::cleanData " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::cleanData ";
   this->dataByChr.clear();
   this->data.clear();
   this->breakpoints.clear(); 
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::cleanData " << endl; 
+  PLOG(plog::verbose) << "Leaving cnvCompare::cleanData "; 
 }
 
 /**
@@ -190,8 +192,8 @@ void cnvCompare::cleanData() {
  * @return none
  **/
 void cnvCompare::getDatabyChr(string incChr) {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getDatabyChr " << endl;
-  BOOST_LOG_TRIVIAL(info) << "Gathering data for chr " << incChr << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getDatabyChr ";
+  PLOG(plog::info) << "Gathering data for chr " << incChr << endl;
   string ligne;
   string ligneCNV;
   string mot;
@@ -219,7 +221,7 @@ void cnvCompare::getDatabyChr(string incChr) {
   for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++) {
     ligne = myIterA->first;
     ifstream cnvStream(ligne.c_str());
-    BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << "\t" << endl;
+    PLOG(plog::info) << "\tReading file " << ligne << "\t" << endl;
     this->nbFile++;
     long nbLigneFile = 0;
     short nbOfConcernedIndividual = 0;
@@ -286,10 +288,10 @@ void cnvCompare::getDatabyChr(string incChr) {
         this->dataByChr[value].insert_or_assign(i, value_to_insert);
       }
     }
-    BOOST_LOG_TRIVIAL(info) << nbLigneFile << " events detected " << endl;
+    PLOG(plog::info) << nbLigneFile << " events detected " << endl;
   }
-  BOOST_LOG_TRIVIAL(info) << "Ended with " << this->getNbFile() << " files" << endl;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getDatabyChr " << endl;
+  PLOG(plog::info) << "Ended with " << this->getNbFile() << " files";
+  PLOG(plog::verbose) << "Leaving cnvCompare::getDatabyChr ";
 }
 
 
@@ -299,9 +301,9 @@ void cnvCompare::getDatabyChr(string incChr) {
  * @return none
  **/
 void cnvCompare::computeCountsbyChr(string incChr) {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeCountsbyChr " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::computeCountsbyChr ";
   std::cout.precision(3);
-  BOOST_LOG_TRIVIAL(info) << "Computing counts for chr " << incChr << endl;
+  PLOG(plog::info) << "Computing counts for chr " << incChr << endl;
   // struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
@@ -326,22 +328,22 @@ void cnvCompare::computeCountsbyChr(string incChr) {
       continue;
     }
     ifstream cnvStream(ligne.c_str());
-    BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << endl;
+    PLOG(plog::info) << "\tReading file " << ligne << endl;
 
     // managing output file names
     fs::path pathObj(ligne);
     if (pathObj.has_extension()) {
       string extension = pathObj.extension().string(); 
-      BOOST_LOG_TRIVIAL(debug) << "Extension detected : " << extension << endl;
+      PLOG(plog::debug) << "Extension detected : " << extension << endl;
       outFileName = pyReplace(ligne, extension, "." + this->getSuffix() + extension);
     } else {
       outFileName = ligne + "." + this->getSuffix();
     }
     if (outFileName == ligne) {
-      BOOST_LOG_TRIVIAL(error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution" << endl;
+      PLOG(plog::error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution" << endl;
       exit(1);
     }
-    BOOST_LOG_TRIVIAL(info) << "\t\tWriting in file " << outFileName << " in format : " << this->getFormat() << endl;
+    PLOG(plog::info) << "\t\tWriting in file " << outFileName << " in format : " << this->getFormat() << endl;
     // opening file in the apporpriate mode
     ofstream outStream;
     if (incChr == "chr1") {
@@ -381,7 +383,7 @@ void cnvCompare::computeCountsbyChr(string incChr) {
       }
 
       // pass if not del or dup
-      BOOST_LOG_TRIVIAL(trace) << "s_type = " << s_type << endl;
+      PLOG(plog::verbose) << "s_type = " << s_type << endl;
       if ((s_type != "DUP") && (s_type != "DEL")) {
         outStream << ligneCNV << endl;
         continue;
@@ -462,7 +464,7 @@ void cnvCompare::computeCountsbyChr(string incChr) {
     outStream.close();
   }
   this->dataByChr.clear();
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeCountsbyChr " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::computeCountsbyChr ";
 }
 
 
@@ -474,7 +476,7 @@ void cnvCompare::computeCountsbyChr(string incChr) {
  **/
 // output a vector containing : chr start end type value from a BED line
 vector<string> cnvCompare::parseBEDLine(string incLine) {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::parseBEDLine " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::parseBEDLine ";
   vector<string> output;
   string mot;
   short int i = 0;
@@ -504,7 +506,7 @@ vector<string> cnvCompare::parseBEDLine(string incLine) {
     i++;
   }
   return output;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::parseBEDLine " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::parseBEDLine ";
 }
 
 
@@ -515,7 +517,7 @@ vector<string> cnvCompare::parseBEDLine(string incLine) {
  * @todo need to check that all the values are present
  **/
 vector<string> cnvCompare::parseVCFLine(string incLine) {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::parseVCFLine " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::parseVCFLine ";
   vector<string> output;
   map<string, string> temp;
   string mot;
@@ -572,12 +574,12 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       for (long unsigned int n = 0 ; n <= GTInfo.size() ; n ++) {
         if (GTInfo[n] == "GT") {
           GTindex = n;
-          BOOST_LOG_TRIVIAL(trace) << "GT index was found : " << GTindex << endl; 
+          PLOG(plog::verbose) << "GT index was found : " << GTindex << endl; 
         }
         if (! valueFound) {
           if (GTInfo[n] == "CN") {
             CNindex = n;
-            BOOST_LOG_TRIVIAL(trace) << "CN index was found : " << GTindex << endl; 
+            PLOG(plog::verbose) << "CN index was found : " << GTindex << endl; 
           }
         }
       }
@@ -598,17 +600,17 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
 
       if ((! valueFound) && (CNindex == -1)) {
         passGT = true;
-        BOOST_LOG_TRIVIAL(info) << "No copy number value found on the VCF line " << incLine << " : passing it. Please check the VCF specifications" << endl;
+        PLOG(plog::info) << "No copy number value found on the VCF line " << incLine << " : passing it. Please check the VCF specifications" << endl;
         break;
       }
       if (GTindex == -1) {
-        BOOST_LOG_TRIVIAL(info) << "No GT Found on the VCF line : counting only 1" << endl;
+        PLOG(plog::info) << "No GT Found on the VCF line : counting only 1" << endl;
         nbOfConcernedIndiv = 1;
         passGT = true;
         break;
       } else {
         string GT = parseOnSep(mot, ":")[GTindex];
-        BOOST_LOG_TRIVIAL(trace) << "\tGT Found : " << GT << endl;
+        PLOG(plog::verbose) << "\tGT Found : " << GT << endl;
         if (GT != "./.") {
           // need to determine the copy level 
           if (! valueFound) {
@@ -625,7 +627,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
             counts[CNValue_i] += 1;
           }
           nbOfConcernedIndiv += 1;
-          BOOST_LOG_TRIVIAL(trace) << "\t\tadding 1 concerned individual with GT : " << GT << endl;
+          PLOG(plog::verbose) << "\t\tadding 1 concerned individual with GT : " << GT << endl;
         }
       } 
       i++; 
@@ -642,19 +644,19 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
   }
   output.push_back(temp["VALUE"]);
   output.push_back(int_to_string(nbOfConcernedIndiv));
-  BOOST_LOG_TRIVIAL(debug) << "\tNumber of concerned individual is " << nbOfConcernedIndiv << endl;
+  PLOG(plog::debug) << "\tNumber of concerned individual is " << nbOfConcernedIndiv << endl;
   // transforming the counts vector into string 
   output.push_back(int_to_string(counts[0]) + "," + int_to_string(counts[1]) + "," + int_to_string(counts[2]) + "," + int_to_string(counts[3]) + "," + int_to_string(counts[4]) + "," + int_to_string(counts[5]));
 
 
-  BOOST_LOG_TRIVIAL(debug) << "\tWill return output from VCF line : " << endl;
+  PLOG(plog::debug) << "\tWill return output from VCF line : " << endl;
   vector <string>::iterator myIter; 
   for (myIter = output.begin() ; myIter != output.end() ; myIter++ ) {
-    BOOST_LOG_TRIVIAL(debug) << "\t\t" << *myIter << endl; 
+    PLOG(plog::debug) << "\t\t" << *myIter << endl; 
   }
-  BOOST_LOG_TRIVIAL(debug) << "\n";
+  PLOG(plog::debug) << "\n";
 
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::parseVCFLine " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::parseVCFLine ";
   return output;
 }
 
@@ -664,8 +666,8 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
  * @return none
  **/
 void cnvCompare::getDataWhole() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getDataWhole " << endl;
-  BOOST_LOG_TRIVIAL(info) << "Gathering data" << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getDataWhole ";
+  PLOG(plog::info) << "Gathering data" << endl;
   // struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
@@ -684,7 +686,7 @@ void cnvCompare::getDataWhole() {
   {
     ligne = myIterA->first;
     ifstream cnvStream(ligne.c_str());
-    BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << "\t";
+    PLOG(plog::info) << "\tReading file " << ligne << "\t";
     this->nbFile++;
     long nbLigneFile = 0;
     while (getline(cnvStream, ligneCNV))
@@ -743,10 +745,10 @@ void cnvCompare::getDataWhole() {
         this->data[chromosome][value].insert_or_assign(i, value_to_insert);
       }
     }
-    BOOST_LOG_TRIVIAL(info) << " with " << nbLigneFile << " events detected " << endl;
+    PLOG(plog::info) << " with " << nbLigneFile << " events detected " << endl;
   }
-  BOOST_LOG_TRIVIAL(info) << "Ended with " << this->getNbFile() << " files" << endl;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getDataWhole " << endl;
+  PLOG(plog::info) << "Ended with " << this->getNbFile() << " files" << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getDataWhole " << endl;
 }
 
 /**
@@ -755,8 +757,8 @@ void cnvCompare::getDataWhole() {
  * @return none
  **/
 void cnvCompare::computeCountsWhole() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeCountsWhole " << endl;
-  BOOST_LOG_TRIVIAL(info) << "Computing counts" << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::computeCountsWhole " << endl;
+  PLOG(plog::info) << "Computing counts" << endl;
   // struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
@@ -781,23 +783,23 @@ void cnvCompare::computeCountsWhole() {
 
     ifstream cnvStream(ligne.c_str());
 
-    BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << endl;
+    PLOG(plog::info) << "\tReading file " << ligne << endl;
     fs::path pathObj(ligne);
     if (pathObj.has_extension()) {
       string extension = pathObj.extension().string(); 
-      BOOST_LOG_TRIVIAL(trace) << "Extension detected : " << extension << endl;
-      BOOST_LOG_TRIVIAL(trace) << "Suffix is : " << this->getSuffix() << endl;
+      PLOG(plog::verbose) << "Extension detected : " << extension << endl;
+      PLOG(plog::verbose) << "Suffix is : " << this->getSuffix() << endl;
       outFileName = pyReplace(ligne, extension, ("." + this->getSuffix() + extension));
-      BOOST_LOG_TRIVIAL(trace) << "outFileName is : " << outFileName << endl;
+      PLOG(plog::verbose) << "outFileName is : " << outFileName << endl;
     } else {
       outFileName = ligne + "." + this->getSuffix();
     }
     if (outFileName == ligne) {
-      BOOST_LOG_TRIVIAL(error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution" << endl;
+      PLOG(plog::error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution" << endl;
       exit(1);
     }
 
-    BOOST_LOG_TRIVIAL(info) << "\t\tWriting in file " << outFileName << endl;
+    PLOG(plog::info) << "\t\tWriting in file " << outFileName << endl;
     ofstream outStream;
     outStream.open(outFileName.c_str(), ios::out);
     while (getline(cnvStream, ligneCNV)) {
@@ -818,7 +820,7 @@ void cnvCompare::computeCountsWhole() {
       // type conversion
       chromosome = res[0];
       s_type = res[3];
-      BOOST_LOG_TRIVIAL(trace) << "s_type = " << s_type << endl;
+      PLOG(plog::verbose) << "s_type = " << s_type << endl;
       if ((s_type != "DUP") && (s_type != "DEL")) {
         outStream << ligneCNV << endl;
         continue;
@@ -904,7 +906,7 @@ void cnvCompare::computeCountsWhole() {
     }
     outStream.close();
   }
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeCountsWhole " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::computeCountsWhole " << endl;
 }
 
 
@@ -914,8 +916,8 @@ void cnvCompare::computeCountsWhole() {
  * @return none
  **/
 void cnvCompare::computeCountsFast() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::computeCountsFast " << endl;
-  BOOST_LOG_TRIVIAL(info) << "Computing counts" << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::computeCountsFast " << endl;
+  PLOG(plog::info) << "Computing counts" << endl;
   // struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
@@ -939,24 +941,24 @@ void cnvCompare::computeCountsFast() {
     }
     //managing the output file format
     ifstream cnvStream(ligne.c_str());
-    BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << endl;
+    PLOG(plog::info) << "\tReading file " << ligne << endl;
     fs::path pathObj(ligne);
     if (pathObj.has_extension()) {
       string extension = pathObj.extension().string(); 
-      BOOST_LOG_TRIVIAL(trace) << "Extension detected : " << extension << endl;
-      BOOST_LOG_TRIVIAL(trace) << "Suffix is : " << this->getSuffix() << endl;
+      PLOG(plog::verbose) << "Extension detected : " << extension << endl;
+      PLOG(plog::verbose) << "Suffix is : " << this->getSuffix() << endl;
       outFileName = pyReplace(ligne, extension, ("." + this->getSuffix() + extension));
-      BOOST_LOG_TRIVIAL(debug) << "outFileName is : " << outFileName << endl;
+      PLOG(plog::debug) << "outFileName is : " << outFileName << endl;
     } else {
       outFileName = ligne + "." + this->getSuffix();
     }
     if (outFileName == ligne) {
-      BOOST_LOG_TRIVIAL(error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution" << endl;
+      PLOG(plog::error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution" << endl;
       exit(1);
     }
 
     // parsing input file format
-    BOOST_LOG_TRIVIAL(info) << "\t\tWriting in file " << outFileName << endl;
+    PLOG(plog::info) << "\t\tWriting in file " << outFileName << endl;
     ofstream outStream;
     outStream.open(outFileName.c_str(), ios::out);
     while (getline(cnvStream, ligneCNV)) {
@@ -977,7 +979,7 @@ void cnvCompare::computeCountsFast() {
       // type conversion
       chromosome = res[0];
       s_type = res[3];
-      BOOST_LOG_TRIVIAL(debug) << "s_type = " << s_type << endl;
+      PLOG(plog::debug) << "s_type = " << s_type << endl;
       if ((s_type != "DUP") && (s_type != "DEL")) {
         outStream << ligneCNV << endl;
         continue;
@@ -992,29 +994,29 @@ void cnvCompare::computeCountsFast() {
       }
 
       // counts
-      BOOST_LOG_TRIVIAL(debug) << "Computing counts " << chromosome << ":" << start << "-" << end << ":" << s_type << value << endl;
+      PLOG(plog::debug) << "Computing counts " << chromosome << ":" << start << "-" << end << ":" << s_type << value << endl;
       double total = 0;
       map<long, short>::iterator it; 
       short lastValue = 0; 
       long lastPoint = 0; 
-      BOOST_LOG_TRIVIAL(debug) << "\toutFileName is : " << outFileName << endl;
+      PLOG(plog::debug) << "\toutFileName is : " << outFileName << endl;
       for (it = this->breakpoints[chromosome][value].find(start) ; it != next(this->breakpoints[chromosome][value].find(end), 1) ; ++it) {
-        BOOST_LOG_TRIVIAL(debug) << "\tcurrent BP is " << it->first << ":" << it->second;
+        PLOG(plog::debug) << "\tcurrent BP is " << it->first << ":" << it->second;
         if (lastPoint != 0) {
-          BOOST_LOG_TRIVIAL(debug) << "\t\tadding " << ((it->first + 1) - lastPoint) * lastValue;
+          PLOG(plog::debug) << "\t\tadding " << ((it->first + 1) - lastPoint) * lastValue;
           total += ((it->first + 1) - lastPoint) * lastValue;
-          BOOST_LOG_TRIVIAL(debug) << "\t\ttotal is now " << total;
+          PLOG(plog::debug) << "\t\ttotal is now " << total;
           lastPoint = it->first;
           lastValue = it->second; 
         } else {
-          BOOST_LOG_TRIVIAL(debug) << "\t\tNot counting it";
+          PLOG(plog::debug) << "\t\tNot counting it";
           lastPoint = it->first;
           lastValue = it->second; 
         }
       }
       
       double mean = total / (double)((end-start)+1);
-      BOOST_LOG_TRIVIAL(debug) << "\tMean = " << mean; 
+      PLOG(plog::debug) << "\tMean = " << mean; 
 
       // need to adapt the output according to the choosen format
       if (this->getFormat() == "BED") {
@@ -1081,7 +1083,7 @@ void cnvCompare::computeCountsFast() {
     }
     outStream.close();
   }
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::computeCountsFast " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::computeCountsFast " << endl;
 }
 
 
@@ -1091,8 +1093,8 @@ void cnvCompare::computeCountsFast() {
  * @return none
  **/
 void cnvCompare::getDataFast() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getDataFast " << endl;
-  BOOST_LOG_TRIVIAL(info) << "Gathering data" << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getDataFast " << endl;
+  PLOG(plog::info) << "Gathering data" << endl;
   // struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
@@ -1112,7 +1114,7 @@ void cnvCompare::getDataFast() {
   for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++) {
     ligne = myIterA->first;
     ifstream cnvStream(ligne.c_str());
-    BOOST_LOG_TRIVIAL(info) << "\tReading file " << ligne << "\t";
+    PLOG(plog::info) << "\tReading file " << ligne << "\t";
     this->nbFile++;
     long nbLigneFile = 0;
     short nbOfConcernedIndividual = 0;
@@ -1131,12 +1133,12 @@ void cnvCompare::getDataFast() {
 
         // check if the vcf parsing was ok
         if (res.size() == 0) {
-          BOOST_LOG_TRIVIAL(error) << "\tParsing VCF line : " << ligneCNV << " failed, passing line"; 
+          PLOG(plog::error) << "\tParsing VCF line : " << ligneCNV << " failed, passing line"; 
           continue; 
         }
         // pass if not del or dup 
         if ((res[3] != "DEL") and (res[3] != "DUP")) {
-          BOOST_LOG_TRIVIAL(debug) << "\tPassing VCF line : not DEL nor DUP, passing line"; 
+          PLOG(plog::debug) << "\tPassing VCF line : not DEL nor DUP, passing line"; 
           continue;
         }
         
@@ -1157,7 +1159,7 @@ void cnvCompare::getDataFast() {
 
       // value management
       int value = string_to_int(res[4]);
-      BOOST_LOG_TRIVIAL(trace) << "\tCnv single value for this CNV is " << value;
+      PLOG(plog::verbose) << "\tCnv single value for this CNV is " << value;
       if (value > 5) {
         value = 5;
       }
@@ -1177,18 +1179,18 @@ void cnvCompare::getDataFast() {
 
       for (int cn = 0 ; cn <= 5 ; cn ++) {
         int count = 0; 
-        BOOST_LOG_TRIVIAL(debug) << "\tCnv values for this CNV ; cn = " <<  cn  << ", counts = " << levelValues[cn];
+        PLOG(plog::debug) << "\tCnv values for this CNV ; cn = " <<  cn  << ", counts = " << levelValues[cn];
         count = levelValues[cn]; 
         if (count == 0) {
-          BOOST_LOG_TRIVIAL(debug) << "\t\tnothing to insert";
+          PLOG(plog::debug) << "\t\tnothing to insert";
           continue; 
         }
         
-        BOOST_LOG_TRIVIAL(debug) << "\t\twill insert : " << chromosome << ":" << start << "-" << end << " ; cnv : " << cn;
+        PLOG(plog::debug) << "\t\twill insert : " << chromosome << ":" << start << "-" << end << " ; cnv : " << cn;
         
         // fill empty map if chr is not existing
         if (!(this->breakpoints.count(chromosome) > 0)) {
-          BOOST_LOG_TRIVIAL(trace) << "\t\t\tCreating breakpoint map for this chromosome"; 
+          PLOG(plog::verbose) << "\t\t\tCreating breakpoint map for this chromosome"; 
           unordered_map<unsigned int, map<long, short> > tempMap;
           this->breakpoints[chromosome] = tempMap;
           map<long, short> tempList;
@@ -1203,7 +1205,7 @@ void cnvCompare::getDataFast() {
         // look for the start / end values
         // if the map is empty do not try to browse it, just insert the start and end values and treat the next line. 
         if (this->breakpoints[chromosome][cn].empty()) {
-          BOOST_LOG_TRIVIAL(trace) << "\t\t\tMap was empty : so just inserting start & end";
+          PLOG(plog::verbose) << "\t\t\tMap was empty : so just inserting start & end";
           this->breakpoints[chromosome][cn][start] = 1;
           this->breakpoints[chromosome][cn][end] = 0;
           continue; 
@@ -1222,25 +1224,25 @@ void cnvCompare::getDataFast() {
         
         if (it_beforestart != breakpoints[chromosome][cn].end()) {
           it_beforestart --;
-          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint before start is " << it_beforestart->first << ":" << it_beforestart->second;
+          PLOG(plog::verbose) << "\t\tBreakpoint before start is " << it_beforestart->first << ":" << it_beforestart->second;
         } else {
-          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint before start is after the current end of the map";
+          PLOG(plog::verbose) << "\t\tBreakpoint before start is after the current end of the map";
         }
         if (it_beforeend != breakpoints[chromosome][cn].end()) {
           it_beforeend --;
-          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint before end is " << it_beforeend->first << ":" << it_beforeend->second;
+          PLOG(plog::verbose) << "\t\tBreakpoint before end is " << it_beforeend->first << ":" << it_beforeend->second;
         } else {
-          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint before end is after the current end of the map";
+          PLOG(plog::verbose) << "\t\tBreakpoint before end is after the current end of the map";
         }
         if (it_afterstart != breakpoints[chromosome][cn].end()) {
-          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint after start is " << it_afterstart->first << ":" << it_afterstart->second;
+          PLOG(plog::verbose) << "\t\tBreakpoint after start is " << it_afterstart->first << ":" << it_afterstart->second;
         } else {
-          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint after start is after the current end of the map";
+          PLOG(plog::verbose) << "\t\tBreakpoint after start is after the current end of the map";
         }
         if (it_afterend != breakpoints[chromosome][cn].end()) {
-          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint after end is " << it_afterend->first << ":" << it_afterend->second;
+          PLOG(plog::verbose) << "\t\tBreakpoint after end is " << it_afterend->first << ":" << it_afterend->second;
         } else {
-          BOOST_LOG_TRIVIAL(trace) << "\t\tBreakpoint after end is after the current end of the map";
+          PLOG(plog::verbose) << "\t\tBreakpoint after end is after the current end of the map";
         }
 
         // manage begin of the map
@@ -1252,7 +1254,7 @@ void cnvCompare::getDataFast() {
 
         // insert start point 
         breakpoints[chromosome][cn].insert_or_assign(start, lastCount + count);
-        BOOST_LOG_TRIVIAL(trace) << "\t\tStart inserted " << start << ":" << lastCount + count << " at cn level " << cn;
+        PLOG(plog::verbose) << "\t\tStart inserted " << start << ":" << lastCount + count << " at cn level " << cn;
 
         // get last value of the interval & manage end of the map
         if (it_beforeend == breakpoints[chromosome][cn].end()) {
@@ -1265,25 +1267,25 @@ void cnvCompare::getDataFast() {
         for (it = it_afterstart ; it != it_afterend ; ++ it) {
           if (it != breakpoints[chromosome][cn].end()) {
             breakpoints[chromosome][cn][it->first] += count;
-            BOOST_LOG_TRIVIAL(trace) << "\t\tChanging breakpoints " << it->first << ":" << breakpoints[chromosome][cn][it->first] - count << " to " << breakpoints[chromosome][cn][it->first] << " at cn level " << cn;
+            PLOG(plog::verbose) << "\t\tChanging breakpoints " << it->first << ":" << breakpoints[chromosome][cn][it->first] - count << " to " << breakpoints[chromosome][cn][it->first] << " at cn level " << cn;
           }
         }
 
         // insert the end 
         breakpoints[chromosome][value].insert_or_assign(end, lastCount);
-        BOOST_LOG_TRIVIAL(trace) << "\t\tEnd inserted " << end << ":" << lastCount << " at cn level " << cn;
-        BOOST_LOG_TRIVIAL(trace) << "\t\tSize of breakpoints at chr : " << chromosome << " and value " << cn << " : " << breakpoints[chromosome][cn].size();
+        PLOG(plog::verbose) << "\t\tEnd inserted " << end << ":" << lastCount << " at cn level " << cn;
+        PLOG(plog::verbose) << "\t\tSize of breakpoints at chr : " << chromosome << " and value " << cn << " : " << breakpoints[chromosome][cn].size();
 
         // a count for large files to be sure that everything went well
         if ((nbLigneFile % 10000) == 0) {
-          BOOST_LOG_TRIVIAL(info) << "\t" << nbLigneFile << " events detected, still in progress" << endl;
+          PLOG(plog::info) << "\t" << nbLigneFile << " events detected, still in progress" << endl;
         }
       }
     }
-    BOOST_LOG_TRIVIAL(info) << " with " << nbLigneFile << " events detected " << endl;
+    PLOG(plog::info) << " with " << nbLigneFile << " events detected " << endl;
   }
-  BOOST_LOG_TRIVIAL(info) << "Ended with " << this->getNbFile() << " files" << endl;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getDataFast " << endl;
+  PLOG(plog::info) << "Ended with " << this->getNbFile() << " files" << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getDataFast " << endl;
 }
 
 
@@ -1293,9 +1295,9 @@ void cnvCompare::getDataFast() {
  * @return integer value : the number of file from the instance of the cnvCompare class
  **/
 short int cnvCompare::getNbFile() { 
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getNbFile " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getNbFile " << endl;
   return this->nbFile; 
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getNbFile " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getNbFile " << endl;
 }
 
 
@@ -1305,9 +1307,9 @@ short int cnvCompare::getNbFile() {
  * @return string value : the name of the input file list
  **/
 string cnvCompare::getInputFile() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getInputFile " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getInputFile " << endl;
   return this->inputFile;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getInputFile " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getInputFile " << endl;
 }
 
 
@@ -1317,9 +1319,9 @@ string cnvCompare::getInputFile() {
  * @return string value : the name of the control file list
  **/
 string cnvCompare::getControlFile() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getControlFile " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getControlFile " << endl;
   return this->controlFile;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getControlFile " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getControlFile " << endl;
 }
 
 
@@ -1330,15 +1332,15 @@ string cnvCompare::getControlFile() {
  * @return int value : a return code : 0 if ok, > 0 if not ok
  **/
 int cnvCompare::fillMap(string incFile, string status) {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::fillMap " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::fillMap " << endl;
   ifstream allStream(incFile.c_str());
   string ligne;
   if (allStream) {
     while (getline(allStream, ligne)) {
       ifstream cnvStream(ligne.c_str());
-      BOOST_LOG_TRIVIAL(info) << "\tadding file " << ligne << " as " << status << endl;
+      PLOG(plog::info) << "\tadding file " << ligne << " as " << status << endl;
       if (!IsFileReadable(ligne)) {
-        BOOST_LOG_TRIVIAL(warning) << "File provided as " << status << " : " << ligne << " is not accessible : passsing file" << endl;
+        PLOG(plog::warning) << "File provided as " << status << " : " << ligne << " is not accessible : passsing file" << endl;
         continue;
       }
       this->nbFile++;
@@ -1346,7 +1348,7 @@ int cnvCompare::fillMap(string incFile, string status) {
     }
   }
   
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::fillMap " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::fillMap " << endl;
   return this->nbFile;
 }
 
@@ -1357,9 +1359,9 @@ int cnvCompare::fillMap(string incFile, string status) {
  * @return int value : the filter size value
  **/
 int cnvCompare::getFilterSize() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getFilterSize " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getFilterSize " << endl;
   return this->filterSize;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getFilterSize " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getFilterSize " << endl;
 }
 
 
@@ -1370,10 +1372,10 @@ int cnvCompare::getFilterSize() {
  * @return none
  **/
 void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice) {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::setFormat " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::setFormat " << endl;
   this->useVCFFormat = incVCFChoice;
   this->useBEDFormat = incBEDChoice;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::setFormat " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::setFormat " << endl;
 }
 
 
@@ -1383,13 +1385,13 @@ void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice) {
  * @return string value : the file format
  **/
 string cnvCompare::getFormat() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getFormat " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getFormat " << endl;
   if (this->useVCFFormat) {
     return "VCF";
   } else {
     return "BED";
   }
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getFormat " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getFormat " << endl;
 }
 
 
@@ -1399,9 +1401,9 @@ string cnvCompare::getFormat() {
  * @return int value : a return code : 0 if ok, > 0 if not ok
  **/
 int cnvCompare::populateChr() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::populateChr " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::populateChr " << endl;
   this->chromosomeMap.insert(this->chromosomeMap.end(), {"chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrX", "chrY"});
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::populateChr " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::populateChr " << endl;
   return 0; 
 }
 
@@ -1412,9 +1414,9 @@ int cnvCompare::populateChr() {
  * @return none
  **/
 void cnvCompare::setSuffix(string incSuffix) {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::setSuffix " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::setSuffix " << endl;
   this->suffix = incSuffix;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::setSuffix " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::setSuffix " << endl;
 }
 
 
@@ -1424,8 +1426,8 @@ void cnvCompare::setSuffix(string incSuffix) {
  * @return string value : defining the suffix value
  **/
 string cnvCompare::getSuffix() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getSuffix " << endl;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getSuffix " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getSuffix " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getSuffix " << endl;
   return this->suffix; 
 }
 
@@ -1436,9 +1438,9 @@ string cnvCompare::getSuffix() {
  * @return none
  **/
 void cnvCompare::setDictFile(string incDictFile) {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::setDictFile " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::setDictFile " << endl;
   this->dictFile = incDictFile;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::setDictFile " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::setDictFile " << endl;
 }
 
 
@@ -1448,8 +1450,8 @@ void cnvCompare::setDictFile(string incDictFile) {
  * @return string value defining the dict file
  **/
 string cnvCompare::getDictFile() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getDictFile " << endl;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getDictFile " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getDictFile " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getDictFile " << endl;
   return this->dictFile; 
 }
 
@@ -1460,13 +1462,13 @@ string cnvCompare::getDictFile() {
  * @return none
  **/
 void cnvCompare::parseDictFile(string incDictFile) {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::parseDictFile " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::parseDictFile " << endl;
   string ligne;
   string mot;
   string header = "@SQ";
 
   // Parsing dict file
-  BOOST_LOG_TRIVIAL(info) << "Reading Dict file " << incDictFile << endl;
+  PLOG(plog::info) << "Reading Dict file " << incDictFile << endl;
   ifstream dictStream(incDictFile.c_str());
   while (getline(dictStream, ligne)) {
     string chrName; 
@@ -1479,11 +1481,11 @@ void cnvCompare::parseDictFile(string incDictFile) {
           chrName = parseOnSep(":", (*myIter))[1]; 
         }
       }
-      BOOST_LOG_TRIVIAL(info) << "adding " << chrName << " to the chromosome map" << endl;
+      PLOG(plog::info) << "adding " << chrName << " to the chromosome map" << endl;
       this->chromosomeMap.push_back(chrName);
     }
   }
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::parseDictFile " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::parseDictFile " << endl;
 }
 
 /**
@@ -1492,9 +1494,9 @@ void cnvCompare::parseDictFile(string incDictFile) {
  * @return none
  **/
 void cnvCompare::setHasDict(bool incBool) {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::setHasDict " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::setHasDict " << endl;
   this->hasDict = incBool;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::setHasDict " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::setHasDict " << endl;
 }
 
 
@@ -1504,9 +1506,9 @@ void cnvCompare::setHasDict(bool incBool) {
  * @return short value : the number of individual in memory
  **/
 short int cnvCompare::getNbIndividual() {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::getNbIndividual " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getNbIndividual " << endl;
   return this->nbIndividual;
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::getNbIndividual " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getNbIndividual " << endl;
 }
 
 /**
@@ -1515,7 +1517,7 @@ short int cnvCompare::getNbIndividual() {
  * @return none
  **/
 void cnvCompare::watchHeader(string incLine) {
-  BOOST_LOG_TRIVIAL(trace) << "Entering cnvCompare::watchHeader " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::watchHeader " << endl;
   string goodHeader = "#CHR"; 
   short initIndiv = this->getNbIndividual();
   if (incLine.find(goodHeader) == 0) {
@@ -1523,8 +1525,8 @@ void cnvCompare::watchHeader(string incLine) {
     for (long unsigned int n = 9 ; n < lineTable.size() ; n ++) {
       this->nbIndividual += 1;
     }
-    BOOST_LOG_TRIVIAL(info) << "Added " << this->getNbIndividual() - initIndiv << " individuals to the list, total is now : " << this->getNbIndividual() << endl;
+    PLOG(plog::info) << "Added " << this->getNbIndividual() - initIndiv << " individuals to the list, total is now : " << this->getNbIndividual() << endl;
   }
 
-  BOOST_LOG_TRIVIAL(trace) << "Leaving cnvCompare::watchHeader" << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::watchHeader" << endl;
 }
