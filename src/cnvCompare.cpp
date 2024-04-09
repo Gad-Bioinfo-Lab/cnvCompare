@@ -1,5 +1,3 @@
-#define BOOST_LOG_DYN_LINK 1
-
 // C++ std libs
 #include <iostream>
 #include <iomanip>
@@ -44,8 +42,8 @@ namespace fs = boost::filesystem;
  * @return none
  **/
 cnvCompare::cnvCompare() {
-  PLOG(plog::verbose) << "Entering cnvCompare::cnvCompare default constructor" << endl;
-  PLOG(plog::verbose) << "Leaving cnvCompare::cnvCompare default constructor" << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::cnvCompare default constructor";
+  PLOG(plog::verbose) << "Leaving cnvCompare::cnvCompare default constructor";
 }
 
 
@@ -57,7 +55,7 @@ cnvCompare::cnvCompare() {
  * @return none
  **/
 cnvCompare::cnvCompare(string iF, int nT, int s) {
-  PLOG(plog::verbose) << "Entering cnvCompare::cnvCompare (string, int, int) Ctor" << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::cnvCompare (string, int, int) Ctor";
   PLOG(plog::verbose) <<  "cnvCompare constructor called";
   PLOG(plog::verbose) <<  "sizeof(char) = " << sizeof(char);
   PLOG(plog::verbose) <<  "sizeof(string) = " << sizeof(string);
@@ -72,7 +70,7 @@ cnvCompare::cnvCompare(string iF, int nT, int s) {
   this->suffix = "count";
   // Adding sample files 
   int n = this->fillMap(iF, "sample");
-  PLOG(plog::info) << n << " files added to sample list" << endl;
+  PLOG(plog::info) << n << " files added to sample list";
   // populating chromosome either by parsing the dict of with a default human map
   if (this->hasDict) {
     this->parseDictFile(this->getDictFile());
@@ -80,10 +78,10 @@ cnvCompare::cnvCompare(string iF, int nT, int s) {
   } else {
     int ret = this->populateChr();
     if (ret != 0) {
-      PLOG(plog::error) << "Chromosome population couldn't be filled in" << endl;
+      PLOG(plog::error) << "Chromosome population couldn't be filled in";
     }
   }
-  PLOG(plog::verbose) << "Leaving cnvCompare::cnvCompare (string, int, int) Ctor" << endl; 
+  PLOG(plog::verbose) << "Leaving cnvCompare::cnvCompare (string, int, int) Ctor"; 
 }
 
 /**
@@ -95,7 +93,7 @@ cnvCompare::cnvCompare(string iF, int nT, int s) {
  * @return none
  **/
 cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
-  PLOG(plog::verbose) << "Entering cnvCompare::cnvCompare (string, string, int, int) Ctor" << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::cnvCompare (string, string, int, int) Ctor";
   // init of the needed class members
   this->inputFile = iF;
   this->controlFile = cF;
@@ -105,19 +103,19 @@ cnvCompare::cnvCompare(string iF, string cF, int nT, int s) {
   this->suffix = "count";
   // Adding sample files & control files
   int n = this->fillMap(iF, "sample");
-  PLOG(plog::info) << n << " files added to sample list" << endl;
+  PLOG(plog::info) << n << " files added to sample list";
   int m = this->fillMap(cF, "control");
-  PLOG(plog::info) << m << " files added to control list" << endl;
+  PLOG(plog::info) << m << " files added to control list";
   // populating chromosome either by parsing the dict of with a default human map
   if (this->hasDict) {
     this->parseDictFile(this->getDictFile());
   } else {
     int ret = this->populateChr();
     if (ret != 0) {
-      PLOG(plog::error) << "Chromosome population couldn't be filled in" << endl;
+      PLOG(plog::error) << "Chromosome population couldn't be filled in";
     }
   }
-  PLOG(plog::verbose) << "Leaving cnvCompare::cnvCompare (string, string, int, int) Ctor" << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::cnvCompare (string, string, int, int) Ctor";
 }
 
 
@@ -193,7 +191,7 @@ void cnvCompare::cleanData() {
  **/
 void cnvCompare::getDatabyChr(string incChr) {
   PLOG(plog::verbose) << "Entering cnvCompare::getDatabyChr ";
-  PLOG(plog::info) << "Gathering data for chr " << incChr << endl;
+  PLOG(plog::info) << "Gathering data for chr " << incChr;
   string ligne;
   string ligneCNV;
   string mot;
@@ -221,7 +219,7 @@ void cnvCompare::getDatabyChr(string incChr) {
   for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++) {
     ligne = myIterA->first;
     ifstream cnvStream(ligne.c_str());
-    PLOG(plog::info) << "\tReading file " << ligne << "\t" << endl;
+    PLOG(plog::info) << "\tReading file " << ligne << "\t";
     this->nbFile++;
     long nbLigneFile = 0;
     short nbOfConcernedIndividual = 0;
@@ -288,7 +286,7 @@ void cnvCompare::getDatabyChr(string incChr) {
         this->dataByChr[value].insert_or_assign(i, value_to_insert);
       }
     }
-    PLOG(plog::info) << nbLigneFile << " events detected " << endl;
+    PLOG(plog::info) << nbLigneFile << " events detected ";
   }
   PLOG(plog::info) << "Ended with " << this->getNbFile() << " files";
   PLOG(plog::verbose) << "Leaving cnvCompare::getDatabyChr ";
@@ -303,7 +301,7 @@ void cnvCompare::getDatabyChr(string incChr) {
 void cnvCompare::computeCountsbyChr(string incChr) {
   PLOG(plog::verbose) << "Entering cnvCompare::computeCountsbyChr ";
   std::cout.precision(3);
-  PLOG(plog::info) << "Computing counts for chr " << incChr << endl;
+  PLOG(plog::info) << "Computing counts for chr " << incChr;
   // struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
@@ -328,22 +326,22 @@ void cnvCompare::computeCountsbyChr(string incChr) {
       continue;
     }
     ifstream cnvStream(ligne.c_str());
-    PLOG(plog::info) << "\tReading file " << ligne << endl;
+    PLOG(plog::info) << "\tReading file " << ligne;
 
     // managing output file names
     fs::path pathObj(ligne);
     if (pathObj.has_extension()) {
       string extension = pathObj.extension().string(); 
-      PLOG(plog::debug) << "Extension detected : " << extension << endl;
+      PLOG(plog::debug) << "Extension detected : " << extension;
       outFileName = pyReplace(ligne, extension, "." + this->getSuffix() + extension);
     } else {
       outFileName = ligne + "." + this->getSuffix();
     }
     if (outFileName == ligne) {
-      PLOG(plog::error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution" << endl;
+      PLOG(plog::error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution";
       exit(1);
     }
-    PLOG(plog::info) << "\t\tWriting in file " << outFileName << " in format : " << this->getFormat() << endl;
+    PLOG(plog::info) << "\t\tWriting in file " << outFileName << " in format : " << this->getFormat();
     // opening file in the apporpriate mode
     ofstream outStream;
     if (incChr == "chr1") {
@@ -383,7 +381,7 @@ void cnvCompare::computeCountsbyChr(string incChr) {
       }
 
       // pass if not del or dup
-      PLOG(plog::verbose) << "s_type = " << s_type << endl;
+      PLOG(plog::verbose) << "s_type = " << s_type;
       if ((s_type != "DUP") && (s_type != "DEL")) {
         outStream << ligneCNV << endl;
         continue;
@@ -574,12 +572,12 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       for (long unsigned int n = 0 ; n <= GTInfo.size() ; n ++) {
         if (GTInfo[n] == "GT") {
           GTindex = n;
-          PLOG(plog::verbose) << "GT index was found : " << GTindex << endl; 
+          PLOG(plog::verbose) << "GT index was found : " << GTindex; 
         }
         if (! valueFound) {
           if (GTInfo[n] == "CN") {
             CNindex = n;
-            PLOG(plog::verbose) << "CN index was found : " << GTindex << endl; 
+            PLOG(plog::verbose) << "CN index was found : " << GTindex; 
           }
         }
       }
@@ -600,17 +598,17 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
 
       if ((! valueFound) && (CNindex == -1)) {
         passGT = true;
-        PLOG(plog::info) << "No copy number value found on the VCF line " << incLine << " : passing it. Please check the VCF specifications" << endl;
+        PLOG(plog::info) << "No copy number value found on the VCF line " << incLine << " : passing it. Please check the VCF specifications";
         break;
       }
       if (GTindex == -1) {
-        PLOG(plog::info) << "No GT Found on the VCF line : counting only 1" << endl;
+        PLOG(plog::info) << "No GT Found on the VCF line : counting only 1";
         nbOfConcernedIndiv = 1;
         passGT = true;
         break;
       } else {
         string GT = parseOnSep(mot, ":")[GTindex];
-        PLOG(plog::verbose) << "\tGT Found : " << GT << endl;
+        PLOG(plog::verbose) << "\tGT Found : " << GT;
         if (GT != "./.") {
           // need to determine the copy level 
           if (! valueFound) {
@@ -627,7 +625,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
             counts[CNValue_i] += 1;
           }
           nbOfConcernedIndiv += 1;
-          PLOG(plog::verbose) << "\t\tadding 1 concerned individual with GT : " << GT << endl;
+          PLOG(plog::verbose) << "\t\tadding 1 concerned individual with GT : " << GT;
         }
       } 
       i++; 
@@ -644,12 +642,12 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
   }
   output.push_back(temp["VALUE"]);
   output.push_back(int_to_string(nbOfConcernedIndiv));
-  PLOG(plog::debug) << "\tNumber of concerned individual is " << nbOfConcernedIndiv << endl;
+  PLOG(plog::debug) << "\tNumber of concerned individual is " << nbOfConcernedIndiv;
   // transforming the counts vector into string 
   output.push_back(int_to_string(counts[0]) + "," + int_to_string(counts[1]) + "," + int_to_string(counts[2]) + "," + int_to_string(counts[3]) + "," + int_to_string(counts[4]) + "," + int_to_string(counts[5]));
 
 
-  PLOG(plog::debug) << "\tWill return output from VCF line : " << endl;
+  PLOG(plog::debug) << "\tWill return output from VCF line : ";
   vector <string>::iterator myIter; 
   for (myIter = output.begin() ; myIter != output.end() ; myIter++ ) {
     PLOG(plog::debug) << "\t\t" << *myIter << endl; 
@@ -667,7 +665,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
  **/
 void cnvCompare::getDataWhole() {
   PLOG(plog::verbose) << "Entering cnvCompare::getDataWhole ";
-  PLOG(plog::info) << "Gathering data" << endl;
+  PLOG(plog::info) << "Gathering data";
   // struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
@@ -745,10 +743,10 @@ void cnvCompare::getDataWhole() {
         this->data[chromosome][value].insert_or_assign(i, value_to_insert);
       }
     }
-    PLOG(plog::info) << " with " << nbLigneFile << " events detected " << endl;
+    PLOG(plog::info) << " with " << nbLigneFile << " events detected ";
   }
-  PLOG(plog::info) << "Ended with " << this->getNbFile() << " files" << endl;
-  PLOG(plog::verbose) << "Leaving cnvCompare::getDataWhole " << endl;
+  PLOG(plog::info) << "Ended with " << this->getNbFile() << " files";
+  PLOG(plog::verbose) << "Leaving cnvCompare::getDataWhole ";
 }
 
 /**
@@ -757,8 +755,8 @@ void cnvCompare::getDataWhole() {
  * @return none
  **/
 void cnvCompare::computeCountsWhole() {
-  PLOG(plog::verbose) << "Entering cnvCompare::computeCountsWhole " << endl;
-  PLOG(plog::info) << "Computing counts" << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::computeCountsWhole ";
+  PLOG(plog::info) << "Computing counts";
   // struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
@@ -783,14 +781,14 @@ void cnvCompare::computeCountsWhole() {
 
     ifstream cnvStream(ligne.c_str());
 
-    PLOG(plog::info) << "\tReading file " << ligne << endl;
+    PLOG(plog::info) << "\tReading file " << ligne;
     fs::path pathObj(ligne);
     if (pathObj.has_extension()) {
       string extension = pathObj.extension().string(); 
-      PLOG(plog::verbose) << "Extension detected : " << extension << endl;
-      PLOG(plog::verbose) << "Suffix is : " << this->getSuffix() << endl;
+      PLOG(plog::verbose) << "Extension detected : " << extension;
+      PLOG(plog::verbose) << "Suffix is : " << this->getSuffix();
       outFileName = pyReplace(ligne, extension, ("." + this->getSuffix() + extension));
-      PLOG(plog::verbose) << "outFileName is : " << outFileName << endl;
+      PLOG(plog::verbose) << "outFileName is : " << outFileName;
     } else {
       outFileName = ligne + "." + this->getSuffix();
     }
@@ -799,7 +797,7 @@ void cnvCompare::computeCountsWhole() {
       exit(1);
     }
 
-    PLOG(plog::info) << "\t\tWriting in file " << outFileName << endl;
+    PLOG(plog::info) << "\t\tWriting in file " << outFileName;
     ofstream outStream;
     outStream.open(outFileName.c_str(), ios::out);
     while (getline(cnvStream, ligneCNV)) {
@@ -820,7 +818,7 @@ void cnvCompare::computeCountsWhole() {
       // type conversion
       chromosome = res[0];
       s_type = res[3];
-      PLOG(plog::verbose) << "s_type = " << s_type << endl;
+      PLOG(plog::verbose) << "s_type = " << s_type;
       if ((s_type != "DUP") && (s_type != "DEL")) {
         outStream << ligneCNV << endl;
         continue;
@@ -906,7 +904,7 @@ void cnvCompare::computeCountsWhole() {
     }
     outStream.close();
   }
-  PLOG(plog::verbose) << "Leaving cnvCompare::computeCountsWhole " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::computeCountsWhole ";
 }
 
 
@@ -916,8 +914,8 @@ void cnvCompare::computeCountsWhole() {
  * @return none
  **/
 void cnvCompare::computeCountsFast() {
-  PLOG(plog::verbose) << "Entering cnvCompare::computeCountsFast " << endl;
-  PLOG(plog::info) << "Computing counts" << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::computeCountsFast ";
+  PLOG(plog::info) << "Computing counts";
   // struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
@@ -941,24 +939,24 @@ void cnvCompare::computeCountsFast() {
     }
     //managing the output file format
     ifstream cnvStream(ligne.c_str());
-    PLOG(plog::info) << "\tReading file " << ligne << endl;
+    PLOG(plog::info) << "\tReading file " << ligne;
     fs::path pathObj(ligne);
     if (pathObj.has_extension()) {
       string extension = pathObj.extension().string(); 
-      PLOG(plog::verbose) << "Extension detected : " << extension << endl;
-      PLOG(plog::verbose) << "Suffix is : " << this->getSuffix() << endl;
+      PLOG(plog::verbose) << "Extension detected : " << extension;
+      PLOG(plog::verbose) << "Suffix is : " << this->getSuffix();
       outFileName = pyReplace(ligne, extension, ("." + this->getSuffix() + extension));
-      PLOG(plog::debug) << "outFileName is : " << outFileName << endl;
+      PLOG(plog::debug) << "outFileName is : " << outFileName;
     } else {
       outFileName = ligne + "." + this->getSuffix();
     }
     if (outFileName == ligne) {
-      PLOG(plog::error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution" << endl;
+      PLOG(plog::error) << "The output filename " << outFileName << " is the same as the input " << ligne << " : it will replace the original file : Stopping execution";
       exit(1);
     }
 
     // parsing input file format
-    PLOG(plog::info) << "\t\tWriting in file " << outFileName << endl;
+    PLOG(plog::info) << "\t\tWriting in file " << outFileName;
     ofstream outStream;
     outStream.open(outFileName.c_str(), ios::out);
     while (getline(cnvStream, ligneCNV)) {
@@ -979,7 +977,7 @@ void cnvCompare::computeCountsFast() {
       // type conversion
       chromosome = res[0];
       s_type = res[3];
-      PLOG(plog::debug) << "s_type = " << s_type << endl;
+      PLOG(plog::debug) << "s_type = " << s_type;
       if ((s_type != "DUP") && (s_type != "DEL")) {
         outStream << ligneCNV << endl;
         continue;
@@ -994,12 +992,12 @@ void cnvCompare::computeCountsFast() {
       }
 
       // counts
-      PLOG(plog::debug) << "Computing counts " << chromosome << ":" << start << "-" << end << ":" << s_type << value << endl;
+      PLOG(plog::debug) << "Computing counts " << chromosome << ":" << start << "-" << end << ":" << s_type << value;
       double total = 0;
       map<long, short>::iterator it; 
       short lastValue = 0; 
       long lastPoint = 0; 
-      PLOG(plog::debug) << "\toutFileName is : " << outFileName << endl;
+      PLOG(plog::debug) << "\toutFileName is : " << outFileName;
       for (it = this->breakpoints[chromosome][value].find(start) ; it != next(this->breakpoints[chromosome][value].find(end), 1) ; ++it) {
         PLOG(plog::debug) << "\tcurrent BP is " << it->first << ":" << it->second;
         if (lastPoint != 0) {
@@ -1083,7 +1081,7 @@ void cnvCompare::computeCountsFast() {
     }
     outStream.close();
   }
-  PLOG(plog::verbose) << "Leaving cnvCompare::computeCountsFast " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::computeCountsFast ";
 }
 
 
@@ -1093,8 +1091,8 @@ void cnvCompare::computeCountsFast() {
  * @return none
  **/
 void cnvCompare::getDataFast() {
-  PLOG(plog::verbose) << "Entering cnvCompare::getDataFast " << endl;
-  PLOG(plog::info) << "Gathering data" << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getDataFast ";
+  PLOG(plog::info) << "Gathering data";
   // struct timeval tbegin, tend;
   string ligne;
   string ligneCNV;
@@ -1278,14 +1276,14 @@ void cnvCompare::getDataFast() {
 
         // a count for large files to be sure that everything went well
         if ((nbLigneFile % 10000) == 0) {
-          PLOG(plog::info) << "\t" << nbLigneFile << " events detected, still in progress" << endl;
+          PLOG(plog::info) << "\t" << nbLigneFile << " events detected, still in progress";
         }
       }
     }
-    PLOG(plog::info) << " with " << nbLigneFile << " events detected " << endl;
+    PLOG(plog::info) << " with " << nbLigneFile << " events detected ";
   }
-  PLOG(plog::info) << "Ended with " << this->getNbFile() << " files" << endl;
-  PLOG(plog::verbose) << "Leaving cnvCompare::getDataFast " << endl;
+  PLOG(plog::info) << "Ended with " << this->getNbFile() << " files";
+  PLOG(plog::verbose) << "Leaving cnvCompare::getDataFast ";
 }
 
 
@@ -1295,9 +1293,9 @@ void cnvCompare::getDataFast() {
  * @return integer value : the number of file from the instance of the cnvCompare class
  **/
 short int cnvCompare::getNbFile() { 
-  PLOG(plog::verbose) << "Entering cnvCompare::getNbFile " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getNbFile ";
   return this->nbFile; 
-  PLOG(plog::verbose) << "Leaving cnvCompare::getNbFile " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getNbFile ";
 }
 
 
@@ -1307,9 +1305,9 @@ short int cnvCompare::getNbFile() {
  * @return string value : the name of the input file list
  **/
 string cnvCompare::getInputFile() {
-  PLOG(plog::verbose) << "Entering cnvCompare::getInputFile " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getInputFile ";
   return this->inputFile;
-  PLOG(plog::verbose) << "Leaving cnvCompare::getInputFile " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getInputFile ";
 }
 
 
@@ -1319,9 +1317,9 @@ string cnvCompare::getInputFile() {
  * @return string value : the name of the control file list
  **/
 string cnvCompare::getControlFile() {
-  PLOG(plog::verbose) << "Entering cnvCompare::getControlFile " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getControlFile ";
   return this->controlFile;
-  PLOG(plog::verbose) << "Leaving cnvCompare::getControlFile " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getControlFile ";
 }
 
 
@@ -1332,15 +1330,15 @@ string cnvCompare::getControlFile() {
  * @return int value : a return code : 0 if ok, > 0 if not ok
  **/
 int cnvCompare::fillMap(string incFile, string status) {
-  PLOG(plog::verbose) << "Entering cnvCompare::fillMap " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::fillMap ";
   ifstream allStream(incFile.c_str());
   string ligne;
   if (allStream) {
     while (getline(allStream, ligne)) {
       ifstream cnvStream(ligne.c_str());
-      PLOG(plog::info) << "\tadding file " << ligne << " as " << status << endl;
+      PLOG(plog::info) << "\tadding file " << ligne << " as " << status;
       if (!IsFileReadable(ligne)) {
-        PLOG(plog::warning) << "File provided as " << status << " : " << ligne << " is not accessible : passsing file" << endl;
+        PLOG(plog::warning) << "File provided as " << status << " : " << ligne << " is not accessible : passsing file";
         continue;
       }
       this->nbFile++;
@@ -1348,7 +1346,7 @@ int cnvCompare::fillMap(string incFile, string status) {
     }
   }
   
-  PLOG(plog::verbose) << "Leaving cnvCompare::fillMap " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::fillMap ";
   return this->nbFile;
 }
 
@@ -1359,9 +1357,9 @@ int cnvCompare::fillMap(string incFile, string status) {
  * @return int value : the filter size value
  **/
 int cnvCompare::getFilterSize() {
-  PLOG(plog::verbose) << "Entering cnvCompare::getFilterSize " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getFilterSize ";
   return this->filterSize;
-  PLOG(plog::verbose) << "Leaving cnvCompare::getFilterSize " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getFilterSize ";
 }
 
 
@@ -1372,10 +1370,10 @@ int cnvCompare::getFilterSize() {
  * @return none
  **/
 void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice) {
-  PLOG(plog::verbose) << "Entering cnvCompare::setFormat " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::setFormat ";
   this->useVCFFormat = incVCFChoice;
   this->useBEDFormat = incBEDChoice;
-  PLOG(plog::verbose) << "Leaving cnvCompare::setFormat " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::setFormat ";
 }
 
 
@@ -1385,13 +1383,15 @@ void cnvCompare::setFormat(bool incVCFChoice, bool incBEDChoice) {
  * @return string value : the file format
  **/
 string cnvCompare::getFormat() {
-  PLOG(plog::verbose) << "Entering cnvCompare::getFormat " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getFormat ";
   if (this->useVCFFormat) {
+    PLOG(plog::verbose) << "Leaving cnvCompare::getFormat ";
     return "VCF";
   } else {
+    PLOG(plog::verbose) << "Leaving cnvCompare::getFormat ";
     return "BED";
   }
-  PLOG(plog::verbose) << "Leaving cnvCompare::getFormat " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getFormat ";
 }
 
 
@@ -1401,9 +1401,9 @@ string cnvCompare::getFormat() {
  * @return int value : a return code : 0 if ok, > 0 if not ok
  **/
 int cnvCompare::populateChr() {
-  PLOG(plog::verbose) << "Entering cnvCompare::populateChr " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::populateChr ";
   this->chromosomeMap.insert(this->chromosomeMap.end(), {"chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrX", "chrY"});
-  PLOG(plog::verbose) << "Leaving cnvCompare::populateChr " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::populateChr ";
   return 0; 
 }
 
@@ -1414,9 +1414,9 @@ int cnvCompare::populateChr() {
  * @return none
  **/
 void cnvCompare::setSuffix(string incSuffix) {
-  PLOG(plog::verbose) << "Entering cnvCompare::setSuffix " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::setSuffix ";
   this->suffix = incSuffix;
-  PLOG(plog::verbose) << "Leaving cnvCompare::setSuffix " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::setSuffix ";
 }
 
 
@@ -1426,8 +1426,8 @@ void cnvCompare::setSuffix(string incSuffix) {
  * @return string value : defining the suffix value
  **/
 string cnvCompare::getSuffix() {
-  PLOG(plog::verbose) << "Entering cnvCompare::getSuffix " << endl;
-  PLOG(plog::verbose) << "Leaving cnvCompare::getSuffix " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getSuffix ";
+  PLOG(plog::verbose) << "Leaving cnvCompare::getSuffix ";
   return this->suffix; 
 }
 
@@ -1438,9 +1438,9 @@ string cnvCompare::getSuffix() {
  * @return none
  **/
 void cnvCompare::setDictFile(string incDictFile) {
-  PLOG(plog::verbose) << "Entering cnvCompare::setDictFile " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::setDictFile ";
   this->dictFile = incDictFile;
-  PLOG(plog::verbose) << "Leaving cnvCompare::setDictFile " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::setDictFile ";
 }
 
 
@@ -1450,8 +1450,8 @@ void cnvCompare::setDictFile(string incDictFile) {
  * @return string value defining the dict file
  **/
 string cnvCompare::getDictFile() {
-  PLOG(plog::verbose) << "Entering cnvCompare::getDictFile " << endl;
-  PLOG(plog::verbose) << "Leaving cnvCompare::getDictFile " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getDictFile ";
+  PLOG(plog::verbose) << "Leaving cnvCompare::getDictFile ";
   return this->dictFile; 
 }
 
@@ -1462,13 +1462,13 @@ string cnvCompare::getDictFile() {
  * @return none
  **/
 void cnvCompare::parseDictFile(string incDictFile) {
-  PLOG(plog::verbose) << "Entering cnvCompare::parseDictFile " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::parseDictFile ";
   string ligne;
   string mot;
   string header = "@SQ";
 
   // Parsing dict file
-  PLOG(plog::info) << "Reading Dict file " << incDictFile << endl;
+  PLOG(plog::info) << "Reading Dict file " << incDictFile;
   ifstream dictStream(incDictFile.c_str());
   while (getline(dictStream, ligne)) {
     string chrName; 
@@ -1481,11 +1481,11 @@ void cnvCompare::parseDictFile(string incDictFile) {
           chrName = parseOnSep(":", (*myIter))[1]; 
         }
       }
-      PLOG(plog::info) << "adding " << chrName << " to the chromosome map" << endl;
+      PLOG(plog::info) << "adding " << chrName << " to the chromosome map";
       this->chromosomeMap.push_back(chrName);
     }
   }
-  PLOG(plog::verbose) << "Leaving cnvCompare::parseDictFile " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::parseDictFile ";
 }
 
 /**
@@ -1494,9 +1494,9 @@ void cnvCompare::parseDictFile(string incDictFile) {
  * @return none
  **/
 void cnvCompare::setHasDict(bool incBool) {
-  PLOG(plog::verbose) << "Entering cnvCompare::setHasDict " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::setHasDict ";
   this->hasDict = incBool;
-  PLOG(plog::verbose) << "Leaving cnvCompare::setHasDict " << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::setHasDict ";
 }
 
 
@@ -1506,9 +1506,9 @@ void cnvCompare::setHasDict(bool incBool) {
  * @return short value : the number of individual in memory
  **/
 short int cnvCompare::getNbIndividual() {
-  PLOG(plog::verbose) << "Entering cnvCompare::getNbIndividual " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::getNbIndividual ";
+  PLOG(plog::verbose) << "Leaving cnvCompare::getNbIndividual ";
   return this->nbIndividual;
-  PLOG(plog::verbose) << "Leaving cnvCompare::getNbIndividual " << endl;
 }
 
 /**
@@ -1517,7 +1517,7 @@ short int cnvCompare::getNbIndividual() {
  * @return none
  **/
 void cnvCompare::watchHeader(string incLine) {
-  PLOG(plog::verbose) << "Entering cnvCompare::watchHeader " << endl;
+  PLOG(plog::verbose) << "Entering cnvCompare::watchHeader ";
   string goodHeader = "#CHR"; 
   short initIndiv = this->getNbIndividual();
   if (incLine.find(goodHeader) == 0) {
@@ -1525,8 +1525,8 @@ void cnvCompare::watchHeader(string incLine) {
     for (long unsigned int n = 9 ; n < lineTable.size() ; n ++) {
       this->nbIndividual += 1;
     }
-    PLOG(plog::info) << "Added " << this->getNbIndividual() - initIndiv << " individuals to the list, total is now : " << this->getNbIndividual() << endl;
+    PLOG(plog::info) << "Added " << this->getNbIndividual() - initIndiv << " individuals to the list, total is now : " << this->getNbIndividual();
   }
 
-  PLOG(plog::verbose) << "Leaving cnvCompare::watchHeader" << endl;
+  PLOG(plog::verbose) << "Leaving cnvCompare::watchHeader";
 }
