@@ -36,7 +36,7 @@ namespace po = boost::program_options;
 
 // logging initiation function 
 void init_logging() {
-	plog::init(plog::debug, "cnvCompare.log");
+	plog::init(plog::verbose, "cnvCompare.log");
 }
 
 // signal handler to leave properly if seg fault, or interruption. 
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
 		App = new cnvCompare(inputFile, inputControlFile, 1, filterSize);
 	} else {
 		App = new cnvCompare(inputFile, 1, filterSize);
-		PLOG(plog::warning) << "No file provided as input control file" << endl;
+		PLOG(plog::warning) << "No file provided as input control file";
 	}
 
 	// deal with the dict option
