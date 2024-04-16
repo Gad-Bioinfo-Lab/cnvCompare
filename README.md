@@ -27,7 +27,7 @@ git clone <pppp>
 cd cnvCompare  
 make  
 
-You also have the possibility to create a singularity sif image from the definition file provided, or to directly use the singularity sif image provided in the corresponding directory. 
+You also have the possibility to create a singularity sif image from the definition file provided, or to directly contact us, we could provide the sif image if needed. 
 
 
 ## Usage 
