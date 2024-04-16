@@ -985,7 +985,7 @@ void cnvCompare::computeCountsFast() {
       chromosome = res[0];
       s_type = res[3];
       PLOG(plog::debug) << "s_type = " << s_type;
-      if ((s_type != "DUP") && (s_type != "DEL") && (s_type != "INV")) {
+      if ((s_type != "DUP") && (s_type != "DEL") && (s_type != "INV") && (s_type != "CNV")) {
         outStream << ligneCNV << endl;
         continue;
       }
