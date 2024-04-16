@@ -1,0 +1,47 @@
+BootStrap: debootstrap
+OSVersion: stable
+MirrorURL: http://ftp.us.debian.org/debian/
+
+
+%help
+This is a singularity container packing the cnvCompare software in version 1.6.0 and all the dedicated environnement set up for a proper usage
+Author : yannis.duffourd@u-bourgogne.fr
+This singularity recipe is open source and free. Please redistribute it as well.
+No warranty is provided.
+cnvCompare sources are installed in /opt/cnvCompare_src
+cnvCompare build is in /opt/cnvCompare_build
+
+
+%setup
+mkdir ${SINGULARITY_ROOTFS}/data
+
+%post
+apt update -y
+
+mkdir /opt/cnvCompare
+
+# system libs
+apt install -y build-essential gcc-11 gcc-11-locales gcc-11-multilib cmake gdb g++
+apt install -y git-all libboost-dev libboost-all-dev
+
+
+# install cnvCompare
+cd /opt/
+git clone https://github.com/Gad-Bioinfo-Lab/cnvCompare.git
+cd cnvCompare
+rm -rf /opt/cnvCompare/singularity_images
+make local
+make profile
+ln -s /opt/cnvCompare/cnvCompare /usr/bin/
+
+%labels
+Maintainer Yannis Duffourd
+Updater Yannis Duffourd <yannis.duffourd@u-bourgogne.fr>
+ContainerVersion v1.0
+Software cnvCompare 1.6.0
+
+%environment
+export LD_LIBRARY_PATH=/lib64:/usr/lib64:
+
+%runscript
+echo "OK"
