@@ -569,7 +569,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
     if (i == 8) {
       // getting index for the GT field
       GTInfo = parseOnSep(mot, ":");
-      for (long unsigned int n = 0 ; n <= GTInfo.size() ; n ++) {
+      for (long unsigned int n = 0 ; n < GTInfo.size() ; n ++) {
         if (strcmp(GTInfo[n].c_str(), "GT") == 0) {
           GTindex = n;
           PLOG(plog::verbose) << "GT index was found : " << GTindex; 
