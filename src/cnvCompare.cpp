@@ -570,12 +570,12 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       // getting index for the GT field
       GTInfo = parseOnSep(mot, ":");
       for (long unsigned int n = 0 ; n <= GTInfo.size() ; n ++) {
-        if (GTInfo[n] == "GT") {
+        if (strcmp(GTInfo[n].c_str(), "GT") == 0) {
           GTindex = n;
           PLOG(plog::verbose) << "GT index was found : " << GTindex; 
         }
         if (! valueFound) {
-          if (GTInfo[n] == "CN") {
+          if (strcmp(GTInfo[n].c_str(), "CN") == 0) {
             CNindex = n;
             PLOG(plog::verbose) << "CN index was found : " << GTindex; 
           }
