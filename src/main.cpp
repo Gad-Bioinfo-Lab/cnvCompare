@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 	}
 	if (vm.count("version")) {
 		cerr << "cnvCompare : comparing and counting CNV's detected by sequencing experiments" << endl; 
-		cerr << "Version 1.5.1" << endl; 
+		cerr << "Version 1.6.0" << endl; 
 		cerr << "WARNING : do not use in diagnostics, results are not guaranteed" << endl;
 		cerr << "Author : <yannis.duffourd@u-bourgogne.fr> - INSERM U1231 GAD - CHU Dijon" << endl; 
 		cerr << "Copyright (c) 2022 GAD Lab under the aGPL v3 License" << endl;
