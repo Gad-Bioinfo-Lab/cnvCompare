@@ -529,7 +529,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
   bool valueFound = false; 
   bool passGT = false;
   int nbOfConcernedIndiv = 0;
-  vector<short> counts(6, 0); 
+  vector<short> counts(7, 0); 
   istringstream issInfo;
   temp["SVTYPE"] = "NONE";
   vector<string> GTInfo;
@@ -592,7 +592,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
         i++; 
         continue;
       }
-      if ((temp["SVTYPE"] != "DEL") and (temp["SVTYPE"] != "DUP")) {
+      if ((temp["SVTYPE"] != "DEL") and (temp["SVTYPE"] != "DUP") and (temp["SVTYPE"] != "INV")){
         break; 
       }
 
@@ -611,18 +611,25 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
         PLOG(plog::verbose) << "\tGT Found : " << GT;
         if (GT != "./.") {
           // need to determine the copy level 
-          if (! valueFound) {
-            CNValue_d = stod((parseOnSep(mot, ":")[CNindex]));
-            CNValue_i = floor(CNValue_d + 0.5);
-            // not interested in cnv at n=2
-            if (CNValue_i == 2) {
-              ++i; 
-              continue; 
+          if (temp["SVTYPE"] != "INV") {
+            if (! valueFound) {
+              CNValue_d = stod((parseOnSep(mot, ":")[CNindex]));
+              CNValue_i = floor(CNValue_d + 0.5);
+              // not interested in cnv at n=2
+              if (CNValue_i == 2) {
+                ++i; 
+                continue; 
+              }
+              if (CNValue_i > 5) {
+                CNValue_i = 5;
+              }
+              
+              counts[CNValue_i] += 1;
             }
-            if (CNValue_i > 5) {
-              CNValue_i = 5;
+          } else { // inversion
+            if (GT != "0/0") {
+              counts[6] += 1;
             }
-            counts[CNValue_i] += 1;
           }
           nbOfConcernedIndiv += 1;
           PLOG(plog::verbose) << "\t\tadding 1 concerned individual with GT : " << GT;
@@ -644,7 +651,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
   output.push_back(int_to_string(nbOfConcernedIndiv));
   PLOG(plog::debug) << "\tNumber of concerned individual is " << nbOfConcernedIndiv;
   // transforming the counts vector into string 
-  output.push_back(int_to_string(counts[0]) + "," + int_to_string(counts[1]) + "," + int_to_string(counts[2]) + "," + int_to_string(counts[3]) + "," + int_to_string(counts[4]) + "," + int_to_string(counts[5]));
+  output.push_back(int_to_string(counts[0]) + "," + int_to_string(counts[1]) + "," + int_to_string(counts[2]) + "," + int_to_string(counts[3]) + "," + int_to_string(counts[4]) + "," + int_to_string(counts[5]) + "," + int_to_string(counts[6]));
 
 
   PLOG(plog::debug) << "\tWill return output from VCF line : ";
@@ -978,7 +985,7 @@ void cnvCompare::computeCountsFast() {
       chromosome = res[0];
       s_type = res[3];
       PLOG(plog::debug) << "s_type = " << s_type;
-      if ((s_type != "DUP") && (s_type != "DEL")) {
+      if ((s_type != "DUP") && (s_type != "DEL") && (s_type != "INV")) {
         outStream << ligneCNV << endl;
         continue;
       }
@@ -989,6 +996,9 @@ void cnvCompare::computeCountsFast() {
       // roofing the value
       if (value > 5) {
         value = 5;
+      }
+      if (s_type == "INV") {
+        value = 6;
       }
 
       // counts
@@ -1019,10 +1029,14 @@ void cnvCompare::computeCountsFast() {
       // need to adapt the output according to the choosen format
       if (this->getFormat() == "BED") {
         outStream << chromosome << "\t" << start << "\t" << end << "\t";
-        if (value > 2) {
+        if (value == 6) {
+           outStream << "INV\t";
+        } else { 
+          if (value > 2) {
           outStream << "DUP\t";
-        } else {
-          outStream << "DEL\t";
+          } else {
+            outStream << "DEL\t";
+          }
         }
         outStream << value << "\t" << mean << "/" << this->getNbIndividual() << endl;
       } else {
@@ -1063,10 +1077,17 @@ void cnvCompare::computeCountsFast() {
               outStream << infomot << ";";
             }
             outStream << "END=" << ciend << ";VALUE=" << value << ";SVTYPE=";
-            if (string_to_int(value) > 2) {
-              outStream << "DUP;";
-            } else {
-              outStream << "DEL;";
+            if (value == ".") {
+              value = "6";
+            }
+            if (string_to_int(value) == 6) {
+              outStream << "INV;";
+            } else { 
+              if (string_to_int(value) > 2) {
+                  outStream << "DUP;";
+                } else {
+                  outStream << "DEL;";
+                }
             }
             outStream << "COUNT=" << floor(mean) << "/" << this->getNbIndividual();
             break;
@@ -1135,8 +1156,8 @@ void cnvCompare::getDataFast() {
           continue; 
         }
         // pass if not del or dup 
-        if ((res[3] != "DEL") and (res[3] != "DUP")) {
-          PLOG(plog::debug) << "\tPassing VCF line : not DEL nor DUP, passing line"; 
+        if ((res[3] != "DEL") and (res[3] != "DUP") and (res[3] != "INV")) {
+          PLOG(plog::debug) << "\tPassing VCF line : not DEL nor DUP nor INV, passing line"; 
           continue;
         }
         
@@ -1157,10 +1178,14 @@ void cnvCompare::getDataFast() {
 
       // value management
       int value = string_to_int(res[4]);
-      PLOG(plog::verbose) << "\tCnv single value for this CNV is " << value;
       if (value > 5) {
         value = 5;
       }
+      if (res[4] == ".") {
+        value = 6;
+      }
+
+      PLOG(plog::verbose) << "\tCnv single value for this CNV is " << value;
       
       levelValues[0] = string_to_int(parseOnSep(res[6], ",")[0]);
       levelValues[1] = string_to_int(parseOnSep(res[6], ",")[1]);
@@ -1168,6 +1193,7 @@ void cnvCompare::getDataFast() {
       levelValues[3] = string_to_int(parseOnSep(res[6], ",")[3]);
       levelValues[4] = string_to_int(parseOnSep(res[6], ",")[4]);
       levelValues[5] = string_to_int(parseOnSep(res[6], ",")[5]);
+      levelValues[6] = string_to_int(parseOnSep(res[6], ",")[6]); // inversion level
 
       
       if (value != -1) {
@@ -1175,7 +1201,7 @@ void cnvCompare::getDataFast() {
       }
 
 
-      for (int cn = 0 ; cn <= 5 ; cn ++) {
+      for (int cn = 0 ; cn <= 6 ; cn ++) {
         int count = 0; 
         PLOG(plog::debug) << "\tCnv values for this CNV ; cn = " <<  cn  << ", counts = " << levelValues[cn];
         count = levelValues[cn]; 
@@ -1198,6 +1224,7 @@ void cnvCompare::getDataFast() {
           this->breakpoints[chromosome][3] = tempList;
           this->breakpoints[chromosome][4] = tempList;
           this->breakpoints[chromosome][5] = tempList;
+          this->breakpoints[chromosome][6] = tempList; // inversion level 
         }
 
         // look for the start / end values
