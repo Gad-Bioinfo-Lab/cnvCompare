@@ -32,13 +32,13 @@ git clone https://github.com/Gad-Bioinfo-Lab/cnvCompare.git
 cd /opt/cnvCompare_build
 cmake /opt/cnvCompare_src/cnvCompare/
 make
-cp cnvCompare /usr/bin/
+ln -s cnvCompare /usr/bin/
 
 %labels
 Maintainer Yannis Duffourd
 Updater Yannis Duffourd <yannis.duffourd@u-bourgogne.fr>
 ContainerVersion v1.0
-Software cnvCompare 1.5.0
+Software cnvCompare 1.5.1
 
 %environment
 
