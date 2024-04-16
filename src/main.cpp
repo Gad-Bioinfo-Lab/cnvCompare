@@ -36,7 +36,7 @@ namespace po = boost::program_options;
 
 // logging initiation function 
 void init_logging() {
-	plog::init(plog::verbose, "cnvCompare.log");
+	plog::init(plog::info, "cnvCompare.log");
 }
 
 // signal handler to leave properly if seg fault, or interruption. 
@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
 
 	// logging start
 	init_logging();
-	PLOG(plog::verbose) << "Starting Main (plog)";
+	PLOG(plog::info) << "Starting Main (plog)";
 
 	// decla
 	bool useVCFFormat = true; 
