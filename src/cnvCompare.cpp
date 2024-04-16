@@ -558,7 +558,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
         if (infomot.find("END=") == 0) {
           temp["END"] = parseOnSep(infomot, "=")[1];
         }
-        if (infomot.find("VALUE=") == 0) {
+        if ((infomot.find("VALUE=") == 0) or (infomot.find("CN=") == 0)){
           temp["VALUE"] = parseOnSep(infomot, "=")[1];
           valueFound = true;
         }
@@ -592,7 +592,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
         i++; 
         continue;
       }
-      if ((temp["SVTYPE"] != "DEL") and (temp["SVTYPE"] != "DUP") and (temp["SVTYPE"] != "INV")){
+      if ((temp["SVTYPE"] != "DEL") and (temp["SVTYPE"] != "DUP") and (temp["SVTYPE"] != "INV") and (temp["SVTYPE"] != "CNV")){
         break; 
       }
 
