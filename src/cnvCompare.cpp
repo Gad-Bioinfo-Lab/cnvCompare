@@ -548,6 +548,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       ++i;
       continue;
     }
+
     if (i == 7) {
       info = mot;
       issInfo.str(info);
@@ -592,6 +593,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
         i++; 
         continue;
       }
+
       if ((temp["SVTYPE"] != "DEL") and (temp["SVTYPE"] != "DUP") and (temp["SVTYPE"] != "INV") and (temp["SVTYPE"] != "CNV")){
         break; 
       }
@@ -663,6 +665,171 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
 
   PLOG(plog::verbose) << "Leaving cnvCompare::parseVCFLine ";
   return output;
+}
+
+/**
+ * @brief Method used to parse a line from a VCF file for TRN usage only
+ * @param incLine the line to parse
+ * @return None
+ * @todo need to check that all the values are present
+ **/
+void cnvCompare::parseVCFLineTRN(string incLine) {
+  PLOG(plog::verbose) << "Entering cnvCompare::parseVCFLineTRN ";
+  map<string, string> temp;
+  string mot;
+  short int i = 0;
+  temp["SVTYPE"] = "TRN";
+  unsigned int trnAPosition = 0;
+  unsigned int trnBPosition = 0;
+  string trnAChr = ""; 
+  string trnBChr = "";
+  string trnBulk = ""; 
+
+  // get information from the line
+  istringstream issLigne(incLine);
+  i = 0;
+  while (getline(issLigne, mot, '\t')) {
+    if (i == 0) {
+      trnAChr = mot;
+      ++i;
+      continue;
+    }
+    if (i == 1) {
+      trnAPosition = string_to_int(mot);
+      ++i;
+      continue;
+    }
+
+    if (i == 4) {
+      trnBulk = mot;
+      ++i;
+      continue;
+    }
+
+    if (i > 4) {
+      break;
+    }
+
+    ++i;
+  }
+  PLOG(plog::verbose) << "\ttrnAChr : " << trnAChr;
+  PLOG(plog::verbose) << "\ttrnAPosition : " << trnAPosition;
+  PLOG(plog::verbose) << "\ttrnBulk : " << trnBulk;
+
+
+  // get the end point 
+  vector<string> trnBulkInfo;
+  trnBulkInfo = parseOnSep(trnBulk, ":");
+  trnBChr = trnBulkInfo[0];
+  trnBPosition = string_to_int(trnBulkInfo[1]);
+
+  // check if there is already a breakpoint existing with these coordinates and get index, insert it if needed
+  PLOG(plog::debug) << "\tGetting index A :";
+  int indexA = insertTrnBreakpoints(trnAChr, trnAPosition);
+  PLOG(plog::debug) << "\t\t" << indexA;
+  PLOG(plog::debug) << "\tGetting index B :";
+  int indexB = insertTrnBreakpoints(trnBChr, trnBPosition);
+  PLOG(plog::debug) << "\t\t" << indexB;
+
+  // swap index if A > B
+  int tmpIndex; 
+  if (indexA > indexB) {
+    tmpIndex = indexB;
+    indexB = indexA;
+    indexA = tmpIndex;
+  }
+
+  // check if association exists 
+  if (!(this->trnAssociation.count(indexA) > 0)) {
+    PLOG(plog::verbose) << "Index A : " << indexA << " was not found, inserting association "; 
+    map<int, int> tmpMap;
+    tmpMap[indexB] = 1;
+    trnAssociation[indexA] = tmpMap;
+    PLOG(plog::debug) << "Inserting TRN association : " << indexA << " : " << indexB << ", count = " << 1;
+  } else {
+    if (!(this->trnAssociation[indexA].count(indexB) > 0)) {
+      PLOG(plog::verbose) << "Index A : " << indexA << " was found, but indexB was not : " << indexB;
+      map<int, int> tmpMap;
+      tmpMap[indexB] = 1;
+      trnAssociation[indexA] = tmpMap;
+    } else {
+      trnAssociation[indexA][indexB] ++;
+      PLOG(plog::debug) << "Index A : " << indexA << " was found, indexB was found : " << indexB << ", incrementing counts  : " << trnAssociation[indexA][indexB];
+    }
+  }
+  PLOG(plog::verbose) << "Leaving cnvCompare::parseVCFLineTRN ";
+}
+
+/**
+ * @brief Method used to get number of association of TRN in a line from a VCF file
+ * @param incLine the line to parse
+ * @return the number of association
+ * @todo 
+ **/
+int cnvCompare::getTRNAssoc(string incLine) {
+  PLOG(plog::verbose) << "Entering cnvCompare::getTRNAssoc ";
+  map<string, string> temp;
+  string mot;
+  short int i = 0;
+  temp["SVTYPE"] = "TRN";
+  unsigned int trnAPosition = 0;
+  unsigned int trnBPosition = 0;
+  string trnAChr = ""; 
+  string trnBChr = "";
+  string trnBulk = ""; 
+
+  // get information from the line
+  istringstream issLigne(incLine);
+  i = 0;
+  while (getline(issLigne, mot, '\t')) {
+    if (i == 0) {
+      trnAChr = mot;
+      ++ i;
+      continue;
+    }
+    if (i == 1) {
+      trnAPosition = string_to_int(mot);
+      ++i;
+      continue;
+    }
+
+    if (i == 4) {
+      trnBulk = mot;
+      ++i;
+      continue;
+    }
+    if (i > 4) {
+      break;
+    }
+    ++i; 
+  }
+
+  // get the end point 
+  vector<string> trnBulkInfo;
+  trnBulkInfo = parseOnSep(trnBulk, ":");
+  trnBChr = trnBulkInfo[0];
+  trnBPosition = string_to_int(trnBulkInfo[1]);
+
+  // check if there is already a breakpoint existing with these coordinates and get index, insert it if needed 
+  PLOG(plog::debug) << "\tLooking for : " << trnAChr << ":" << trnAPosition;
+  int indexA = this->getTRNIndex(trnAChr, trnAPosition);
+  PLOG(plog::debug) << "\tLooking for : " << trnBChr << ":" << trnBPosition;
+  int indexB = this->getTRNIndex(trnBChr, trnBPosition);
+
+  // swap index if A > B
+  int tmpIndex; 
+  if (indexA > indexB) {
+    tmpIndex = indexB;
+    indexB = indexA;
+    indexA = tmpIndex;
+  }
+
+  short res = this->trnAssociation[indexA][indexB];
+  if (res < 1) {
+    res = 1;
+  }
+  PLOG(plog::verbose) << "Leaving cnvCompare::getTRNAssoc ";
+  return res;
 }
 
 /**
@@ -985,7 +1152,65 @@ void cnvCompare::computeCountsFast() {
       chromosome = res[0];
       s_type = res[3];
       PLOG(plog::debug) << "s_type = " << s_type;
-      if ((s_type != "DUP") && (s_type != "DEL") && (s_type != "INV") && (s_type != "CNV")) {
+      if ((s_type == "TRN") || (s_type == "BND"))  {
+        int nbAssoc;
+        nbAssoc = this->getTRNAssoc(ligneCNV);
+        // write 
+        if (this->getFormat() == "BED") {
+          outStream << ligneCNV << endl;
+          continue;
+        } else {
+          // output VCF
+          istringstream issLigne(ligneCNV);
+          istringstream issInfo;
+          string mot;
+          string info;
+          string infomot;
+          string svtype;
+          string ciend;
+          string value;
+          i = 0;
+
+          while (getline(issLigne, mot, '\t')) {
+            switch (i) {
+            case 0:
+              outStream << mot;
+              break;
+            case 7:
+              outStream << "\t";
+              info = mot;
+              issInfo.str(info);
+              while (getline(issInfo, infomot, ';')) {
+                if (infomot.find("SVTYPE=") == 0) {
+                  svtype = parseOnSep(infomot, "=")[1];
+                  continue;
+                }
+                if (infomot.find("END=") == 0) {
+                  ciend = parseOnSep(infomot, "=")[1];
+                  continue;
+                }
+                if (infomot.find("VALUE=") == 0) {
+                  value = parseOnSep(infomot, "=")[1];
+                  continue;
+                }
+                outStream << infomot << ";";
+              }
+              outStream << "END=" << ciend << ";VALUE=" << value << ";SVTYPE=BND";
+              outStream << ";COUNT=" << nbAssoc << "/" << this->getNbIndividual();
+              break;
+            default:
+              outStream << "\t" << mot;
+              break;
+            }
+            i++;
+          }
+            outStream << endl;
+        }
+        continue;
+      }
+
+
+      if ((s_type != "DUP") && (s_type != "DEL") && (s_type != "INV") && (s_type != "CNV") && (s_type != "TRN")) {
         outStream << ligneCNV << endl;
         continue;
       }
@@ -1155,6 +1380,17 @@ void cnvCompare::getDataFast() {
           PLOG(plog::error) << "\tParsing VCF line : " << ligneCNV << " failed, passing line"; 
           continue; 
         }
+
+        // TRN count
+        if ((res[3] == "TRN") || (res[3] == "BND")) {
+          PLOG(plog::debug) << "\tEncountering a TRN"; 
+          if (this->getFormat() == "VCF"){
+            this->parseVCFLineTRN(ligneCNV);
+          }
+          continue;
+        }
+
+
         // pass if not del or dup 
         if ((res[3] != "DEL") and (res[3] != "DUP") and (res[3] != "INV")) {
           PLOG(plog::debug) << "\tPassing VCF line : not DEL nor DUP nor INV, passing line"; 
@@ -1556,4 +1792,138 @@ void cnvCompare::watchHeader(string incLine) {
   }
 
   PLOG(plog::verbose) << "Leaving cnvCompare::watchHeader";
+}
+
+
+/**
+ * @brief Method used to insert a breakpoint into the dedicated container
+ * @brief Will modify the breakpoints if existing
+ * @param incMap : A map containing the breakpoint informations
+ * @return integer value : the index of the breakpoint for the future association
+ **/
+ int cnvCompare::insertTrnBreakpoints(string chromosome, unsigned int position) {
+  PLOG(plog::verbose) << "Entering cnvCompare::insertTrnBreakpoints ";
+  
+  // compute next index if needed 
+  unordered_map<string, map<unsigned int, int> >::iterator myIterA;
+  map<unsigned int, int>::iterator myIterB;
+  map<unsigned int, int> tmpMap;
+  int index = this->getNextIndex();
+
+  // fill empty map if chr is not existing
+  if (!(this->trnbreakpoints.count(chromosome) > 0)) {
+    PLOG(plog::info) << "\tCreating TRN breakpoint map for this chromosome " << chromosome; 
+    map<unsigned int, int> tempMap;
+    this->trnbreakpoints[chromosome] = tempMap;
+  }
+
+  // look for the start / end values
+  // if the map is empty do not try to browse it, just insert the start and end values and treat the next line. 
+  if (this->trnbreakpoints[chromosome].empty()) {
+    PLOG(plog::verbose) << "\t\t\tMap was empty : so just inserting Position ";
+    this->trnbreakpoints[chromosome][position] = index;
+    this->setNextIndex(index + 1);
+    PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
+    return index; 
+  }
+
+  // insert start and end values in the sorted map
+  map<unsigned int, int>::iterator it_beforeposition, it_afterposition;
+
+  // need to get values
+  it_beforeposition = trnbreakpoints[chromosome].lower_bound(position);
+  it_afterposition = trnbreakpoints[chromosome].upper_bound(position);
+
+
+  if (it_beforeposition != this->trnbreakpoints[chromosome].begin()) {
+    PLOG(plog::verbose) << "\tBreakpoint before position is " << it_beforeposition->first << " index :" << it_beforeposition->second;
+    if ((position >= (it_beforeposition->first - 200)) && (position <= (it_beforeposition->first + 200))) {
+      PLOG(plog::verbose) << "\t\tBreakpoint is the same";
+      PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
+      return it_beforeposition->second;
+    }
+  } else {
+    PLOG(plog::verbose) << "\tBreakpoint before position is before the current begin of the map";
+  }
+
+  if (it_afterposition != this->trnbreakpoints[chromosome].end()) {
+    PLOG(plog::verbose) << "\tBreakpoint after position is " << it_afterposition->first << " index :" << it_afterposition->second;
+    if ((position <= (it_afterposition->first + 200)) && (position >= (it_afterposition->first - 200))) {
+      PLOG(plog::verbose) << "\t\tBreakpoint is the same";
+      PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
+      return it_afterposition->second;
+    }
+  } else {
+    PLOG(plog::verbose) << "\tBreakpoint after position is after the current end of the map";
+  }
+
+
+  PLOG(plog::verbose) << "\tBreakpoint wasn't found, inserting it";
+  this->trnbreakpoints[chromosome][position] = index;
+  this->setNextIndex(index + 1);
+  PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
+  return index; 
+
+
+  PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
+  return 0;
+ }
+
+/**
+ * @brief Method used to get an index from a position in the trn breakpoint list
+ * @brief does not insert or modify the breakpoints
+ * @param chromosome : a string containeing chromosome
+ * @param position : unsigned int containing the position on chromosome
+ * @return integer value : the index of the breakpoint
+ **/
+int cnvCompare::getTRNIndex(string chromosome, unsigned int position) {
+  PLOG(plog::verbose) << "Entering cnvCompare::getTRNIndex ";
+
+  // itor to get the values 
+  map<unsigned int, int>::iterator it_beforeposition, it_afterposition;
+
+  // need to get values
+  it_beforeposition = trnbreakpoints[chromosome].lower_bound(position);
+  it_afterposition = trnbreakpoints[chromosome].upper_bound(position);
+
+  if (it_beforeposition != this->trnbreakpoints[chromosome].begin()) {
+    if ((position >= (it_beforeposition->first - 200)) && (position <= (it_beforeposition->first + 200))) {
+      PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
+      PLOG(plog::debug) << "\t\tFound (before) : " << chromosome << ":" << it_beforeposition->first << " => " << it_beforeposition->second;
+      return it_beforeposition->second;
+    }
+  } 
+
+  if (it_afterposition != this->trnbreakpoints[chromosome].end()) {
+    if ((position <= (it_afterposition->first + 200)) && (position >= (it_afterposition->first - 200))) {
+      PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
+      PLOG(plog::debug) << "\t\tFound (after) : " << chromosome << ":" << it_afterposition->first << " => " << it_afterposition->second;
+      return it_afterposition->second;
+    }
+  }
+  PLOG(plog::debug) << "\t\tBreakpoint not found in the map => 1";
+  PLOG(plog::verbose) << "Leaving cnvCompare::getTRNIndex";
+  return 1;
+}
+
+/**
+ * @brief Method used to get the next index available
+ * @param None
+ * @return integer value : the next index available
+ **/
+int cnvCompare::getNextIndex() {
+  PLOG(plog::verbose) << "Entering cnvCompare::getTRNIndex";
+  return this->nextIndex;
+  PLOG(plog::verbose) << "Leaving cnvCompare::getNextIndex";
+}
+
+/**
+ * @brief Method used to set the next index available
+ * @param Integer being the next index 
+ * @return void
+ **/
+ void cnvCompare::setNextIndex(int incValue) {
+  PLOG(plog::verbose) << "Entering cnvCompare::setTRNIndex";
+  this->nextIndex = incValue;
+  PLOG(plog::verbose) << "Leaving cnvCompare::setNextIndex";
 }

@@ -32,12 +32,18 @@ class cnvCompare
 		void setFormat(bool, bool);
 		std::vector<std::string> parseBEDLine(std::string);
 		std::vector<std::string> parseVCFLine(std::string);
+		void parseVCFLineTRN(std::string);
 		void setSuffix(std::string);
 		std::string getSuffix(); 
 		std::string getDictFile(); 
 		void setDictFile(std::string);
 		void parseDictFile(std::string);
 		void setHasDict(bool);
+		int insertTrnBreakpoints(std::string, unsigned int);
+		int getTRNAssoc(std::string);
+		int getTRNIndex(std::string, unsigned int);
+		int getNextIndex(); 
+		void setNextIndex(int);
 
 	private:
 		std::string inputFile;
@@ -47,7 +53,8 @@ class cnvCompare
 		std::unordered_map<unsigned int , std::unordered_map<long, short> > dataByChr;
 		std::unordered_map<std::string, std::unordered_map<unsigned int, std::map<long, short> > > breakpoints; 
 		std::unordered_map<std::string, std::unordered_map<unsigned int, std::map<long, short> > > invbreakpoints; 
-		std::unordered_map<std::string, std::unordered_map<unsigned int, std::map<long, short> > > trnbreakpoints; 
+		std::unordered_map<std::string, std::map<unsigned int, int> > trnbreakpoints; 
+		std::unordered_map<int, std::map<int, int> > trnAssociation; 
 		std::vector<std::string> chromosomeMap;
 		short int nbFile = 0;
 		short int nbIndividual = 0;
@@ -61,5 +68,6 @@ class cnvCompare
 		std::string dictFile; 
 		bool hasDict; 
 		void watchHeader(std::string);
+		int nextIndex = 1;
 };
 #endif
