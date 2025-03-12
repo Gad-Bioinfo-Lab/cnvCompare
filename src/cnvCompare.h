@@ -5,6 +5,7 @@
 #include <map>
 #include <unordered_map>
 #include <list>
+#include <utility>
 
 class cnvCompare
 {
@@ -54,7 +55,7 @@ class cnvCompare
 		std::unordered_map<std::string, std::unordered_map<unsigned int, std::map<long, short> > > breakpoints; 
 		std::unordered_map<std::string, std::unordered_map<unsigned int, std::map<long, short> > > invbreakpoints; 
 		std::unordered_map<std::string, std::map<unsigned int, int> > trnbreakpoints; 
-		std::unordered_map<int, std::map<int, int> > trnAssociation; 
+		std::unordered_map<std::string, int> trnAssociation; 
 		std::vector<std::string> chromosomeMap;
 		short int nbFile = 0;
 		short int nbIndividual = 0;

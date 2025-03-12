@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <fstream>
 #include <map>
+#include <utility>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -725,10 +726,10 @@ void cnvCompare::parseVCFLineTRN(string incLine) {
 
   // check if there is already a breakpoint existing with these coordinates and get index, insert it if needed
   PLOG(plog::debug) << "\tGetting index A :";
-  int indexA = insertTrnBreakpoints(trnAChr, trnAPosition);
+  int indexA = this->insertTrnBreakpoints(trnAChr, trnAPosition);
   PLOG(plog::debug) << "\t\t" << indexA;
   PLOG(plog::debug) << "\tGetting index B :";
-  int indexB = insertTrnBreakpoints(trnBChr, trnBPosition);
+  int indexB = this->insertTrnBreakpoints(trnBChr, trnBPosition);
   PLOG(plog::debug) << "\t\t" << indexB;
 
   // swap index if A > B
@@ -740,23 +741,37 @@ void cnvCompare::parseVCFLineTRN(string incLine) {
   }
 
   // check if association exists 
-  if (!(this->trnAssociation.count(indexA) > 0)) {
-    PLOG(plog::verbose) << "Index A : " << indexA << " was not found, inserting association "; 
-    map<int, int> tmpMap;
-    tmpMap[indexB] = 1;
-    trnAssociation[indexA] = tmpMap;
-    PLOG(plog::debug) << "Inserting TRN association : " << indexA << " : " << indexB << ", count = " << 1;
+  string k = int_to_string(indexA) + "_" + int_to_string(indexB);
+  auto it = this->trnAssociation.find(k);
+  if (it == this->trnAssociation.end()) {
+    PLOG(plog::debug) << "Association : Index A = " << indexA << " : Index B = " << indexB << " was not found, inserting association "; 
+    this->trnAssociation[k] = 1;
   } else {
-    if (!(this->trnAssociation[indexA].count(indexB) > 0)) {
-      PLOG(plog::verbose) << "Index A : " << indexA << " was found, but indexB was not : " << indexB;
-      map<int, int> tmpMap;
-      tmpMap[indexB] = 1;
-      trnAssociation[indexA] = tmpMap;
-    } else {
-      trnAssociation[indexA][indexB] ++;
-      PLOG(plog::debug) << "Index A : " << indexA << " was found, indexB was found : " << indexB << ", incrementing counts  : " << trnAssociation[indexA][indexB];
-    }
+    PLOG(plog::debug) << "Association : Index A = " << indexA << " : Index B = " << indexB << " was found, incrementing "; 
+    this->trnAssociation[k] += 1;
   }
+
+
+
+  // if (!(this->trnAssociation.count(indexA) > 0)) {
+  //   PLOG(plog::debug) << "Index A : " << indexA << " was not found, inserting association "; 
+  //   map<int, int> tmpMap;
+  //   tmpMap[indexB] = 1;
+  //   this->trnAssociation[indexA] = tmpMap;
+  //   PLOG(plog::debug) << "Inserting new TRN association : " << indexA << " : " << indexB << ", count = " << 1;
+  // } else {
+  //   PLOG(plog::debug) << "Index A : " << indexA << " was found"; 
+  //   if (!(this->trnAssociation[indexA].count(indexB) > 0)) {
+  //     PLOG(plog::debug) << "\tindexB was not found : " << indexB;
+  //     map<int, int> tmpMap;
+  //     tmpMap[indexB] = 1;
+  //     this->trnAssociation[indexA] = tmpMap;
+  //     PLOG(plog::debug) << "Inserting new TRN association : " << indexA << " : " << indexB << ", count = " << 1;
+  //   } else {
+  //     this->trnAssociation[indexA][indexB] ++;
+  //     PLOG(plog::debug) << "\tIndexB was found : " << indexB << ", incrementing counts  : " << this->trnAssociation[indexA][indexB];
+  //   }
+  // }
   PLOG(plog::verbose) << "Leaving cnvCompare::parseVCFLineTRN ";
 }
 
@@ -823,8 +838,8 @@ int cnvCompare::getTRNAssoc(string incLine) {
     indexB = indexA;
     indexA = tmpIndex;
   }
-
-  short res = this->trnAssociation[indexA][indexB];
+  string k = int_to_string(indexA) + "_" + int_to_string(indexB);
+  short res = this->trnAssociation[k];
   if (res < 1) {
     res = 1;
   }
@@ -1210,7 +1225,7 @@ void cnvCompare::computeCountsFast() {
       }
 
 
-      if ((s_type != "DUP") && (s_type != "DEL") && (s_type != "INV") && (s_type != "CNV") && (s_type != "TRN")) {
+      if ((s_type != "DUP") && (s_type != "DEL") && (s_type != "INV") && (s_type != "CNV")) {
         outStream << ligneCNV << endl;
         continue;
       }
@@ -1362,6 +1377,7 @@ void cnvCompare::getDataFast() {
     this->nbFile++;
     long nbLigneFile = 0;
     short nbOfConcernedIndividual = 0;
+    PLOG(plog::debug) << "### size of trnAssociation : " << this->trnAssociation.size(); 
     while (getline(cnvStream, ligneCNV)) {
       // need to deal with header "#"
       if (ligneCNV.find(header) == 0) {
@@ -1831,8 +1847,8 @@ void cnvCompare::watchHeader(string incLine) {
   map<unsigned int, int>::iterator it_beforeposition, it_afterposition;
 
   // need to get values
-  it_beforeposition = trnbreakpoints[chromosome].lower_bound(position);
-  it_afterposition = trnbreakpoints[chromosome].upper_bound(position);
+  it_beforeposition = this->trnbreakpoints[chromosome].lower_bound(position);
+  it_afterposition = this->trnbreakpoints[chromosome].upper_bound(position);
 
 
   if (it_beforeposition != this->trnbreakpoints[chromosome].begin()) {
@@ -1883,8 +1899,8 @@ int cnvCompare::getTRNIndex(string chromosome, unsigned int position) {
   map<unsigned int, int>::iterator it_beforeposition, it_afterposition;
 
   // need to get values
-  it_beforeposition = trnbreakpoints[chromosome].lower_bound(position);
-  it_afterposition = trnbreakpoints[chromosome].upper_bound(position);
+  it_beforeposition = this->trnbreakpoints[chromosome].lower_bound(position);
+  it_afterposition = this->trnbreakpoints[chromosome].upper_bound(position);
 
   if (it_beforeposition != this->trnbreakpoints[chromosome].begin()) {
     if ((position >= (it_beforeposition->first - 200)) && (position <= (it_beforeposition->first + 200))) {
