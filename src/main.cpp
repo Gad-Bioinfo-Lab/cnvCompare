@@ -37,6 +37,7 @@ namespace po = boost::program_options;
 // logging initiation function 
 void init_logging() {
 	plog::init(plog::info, "cnvCompare.log");
+	//plog::get()->setMaxSeverity(plog::debug);
 }
 
 // signal handler to leave properly if seg fault, or interruption. 
