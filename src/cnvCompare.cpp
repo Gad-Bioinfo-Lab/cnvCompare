@@ -1379,6 +1379,7 @@ void cnvCompare::getDataFast() {
     short nbOfConcernedIndividual = 0;
     PLOG(plog::debug) << "### size of trnAssociation : " << this->trnAssociation.size(); 
     while (getline(cnvStream, ligneCNV)) {
+      PLOG(plog::debug) << "### NEW LINE ###";
       // need to deal with header "#"
       if (ligneCNV.find(header) == 0) {
         this->watchHeader(ligneCNV);
@@ -1466,7 +1467,7 @@ void cnvCompare::getDataFast() {
         
         // fill empty map if chr is not existing
         if (!(this->breakpoints.count(chromosome) > 0)) {
-          PLOG(plog::verbose) << "\t\t\tCreating breakpoint map for this chromosome"; 
+          PLOG(plog::debug) << "\t\t\tCreating breakpoint map for this chromosome"; 
           unordered_map<unsigned int, map<long, short> > tempMap;
           this->breakpoints[chromosome] = tempMap;
           map<long, short> tempList;
@@ -1482,7 +1483,7 @@ void cnvCompare::getDataFast() {
         // look for the start / end values
         // if the map is empty do not try to browse it, just insert the start and end values and treat the next line. 
         if (this->breakpoints[chromosome][cn].empty()) {
-          PLOG(plog::verbose) << "\t\t\tMap was empty : so just inserting start & end";
+          PLOG(plog::debug) << "\t\t\tMap was empty : so just inserting start & end";
           this->breakpoints[chromosome][cn][start] = 1;
           this->breakpoints[chromosome][cn][end] = 0;
           continue; 
@@ -1493,48 +1494,49 @@ void cnvCompare::getDataFast() {
         map<long, short>::iterator it, inserted_it, it_beforestart, it_beforeend, it_afterstart, it_afterend;
 
         // need to get old values
-        it_beforestart = breakpoints[chromosome][cn].lower_bound(start);
-        it_beforeend = breakpoints[chromosome][cn].lower_bound(end);
+        PLOG(plog::debug) << "Looking for breakpoint around start and end : ";
+        it_beforestart = this->breakpoints[chromosome][cn].lower_bound(start);
+        it_beforeend = this->breakpoints[chromosome][cn].lower_bound(end);
 
-        it_afterstart = breakpoints[chromosome][cn].upper_bound(start);
-        it_afterend = breakpoints[chromosome][cn].upper_bound(end);
-        
-        if (it_beforestart != breakpoints[chromosome][cn].end()) {
-          it_beforestart --;
-          PLOG(plog::verbose) << "\t\tBreakpoint before start is " << it_beforestart->first << ":" << it_beforestart->second;
+        it_afterstart = this->breakpoints[chromosome][cn].upper_bound(start);
+        it_afterend = this->breakpoints[chromosome][cn].upper_bound(end);
+
+        if (it_beforestart != this->breakpoints[chromosome][cn].end()) {
+          //it_beforestart --;
+          PLOG(plog::debug) << "\t\tBreakpoint before start is " << it_beforestart->first << ":" << it_beforestart->second;
         } else {
-          PLOG(plog::verbose) << "\t\tBreakpoint before start is after the current end of the map";
+          PLOG(plog::debug) << "\t\tBreakpoint before start is after the current end of the map";
         }
-        if (it_beforeend != breakpoints[chromosome][cn].end()) {
-          it_beforeend --;
-          PLOG(plog::verbose) << "\t\tBreakpoint before end is " << it_beforeend->first << ":" << it_beforeend->second;
+        if (it_beforeend != this->breakpoints[chromosome][cn].end()) {
+          // it_beforeend --;
+          PLOG(plog::debug) << "\t\tBreakpoint before end is " << it_beforeend->first << ":" << it_beforeend->second;
         } else {
-          PLOG(plog::verbose) << "\t\tBreakpoint before end is after the current end of the map";
+          PLOG(plog::debug) << "\t\tBreakpoint before end is after the current end of the map";
         }
-        if (it_afterstart != breakpoints[chromosome][cn].end()) {
-          PLOG(plog::verbose) << "\t\tBreakpoint after start is " << it_afterstart->first << ":" << it_afterstart->second;
+        if (it_afterstart != this->breakpoints[chromosome][cn].end()) {
+          PLOG(plog::debug) << "\t\tBreakpoint after start is " << it_afterstart->first << ":" << it_afterstart->second;
         } else {
-          PLOG(plog::verbose) << "\t\tBreakpoint after start is after the current end of the map";
+          PLOG(plog::debug) << "\t\tBreakpoint after start is after the current end of the map";
         }
-        if (it_afterend != breakpoints[chromosome][cn].end()) {
-          PLOG(plog::verbose) << "\t\tBreakpoint after end is " << it_afterend->first << ":" << it_afterend->second;
+        if (it_afterend != this->breakpoints[chromosome][cn].end()) {
+          PLOG(plog::debug) << "\t\tBreakpoint after end is " << it_afterend->first << ":" << it_afterend->second;
         } else {
-          PLOG(plog::verbose) << "\t\tBreakpoint after end is after the current end of the map";
+          PLOG(plog::debug) << "\t\tBreakpoint after end is after the current end of the map";
         }
 
         // manage begin of the map
-        if ((it_beforestart == breakpoints[chromosome][cn].begin()) || (it_beforestart == breakpoints[chromosome][cn].end())){
+        if (((it_beforestart == this->breakpoints[chromosome][cn].begin()) && (start != 1)) || (it_beforestart == this->breakpoints[chromosome][cn].end())){
           lastCount = 0;
         } else {
           lastCount =  it_beforestart->second;
         }
 
         // insert start point 
-        breakpoints[chromosome][cn].insert_or_assign(start, lastCount + count);
-        PLOG(plog::verbose) << "\t\tStart inserted " << start << ":" << lastCount + count << " at cn level " << cn;
+        this->breakpoints[chromosome][cn].insert_or_assign(start, lastCount + count);
+        PLOG(plog::debug) << "\t\tStart inserted " << start << ":" << lastCount + count << " at cn level " << cn;
 
         // get last value of the interval & manage end of the map
-        if (it_beforeend == breakpoints[chromosome][cn].end()) {
+        if (it_beforeend == this->breakpoints[chromosome][cn].end()) {
           lastCount = 0;
         } else {
           lastCount =  it_beforeend->second;
@@ -1542,16 +1544,16 @@ void cnvCompare::getDataFast() {
 
         // modify all value until end
         for (it = it_afterstart ; it != it_afterend ; ++ it) {
-          if (it != breakpoints[chromosome][cn].end()) {
-            breakpoints[chromosome][cn][it->first] += count;
-            PLOG(plog::verbose) << "\t\tChanging breakpoints " << it->first << ":" << breakpoints[chromosome][cn][it->first] - count << " to " << breakpoints[chromosome][cn][it->first] << " at cn level " << cn;
+          if (it != this->breakpoints[chromosome][cn].end()) {
+            this->breakpoints[chromosome][cn][it->first] += count;
+            PLOG(plog::debug) << "\t\tChanging breakpoints " << it->first << ":" << this->breakpoints[chromosome][cn][it->first] - count << " to " << this->breakpoints[chromosome][cn][it->first] << " at cn level " << cn;
           }
         }
 
         // insert the end 
-        breakpoints[chromosome][value].insert_or_assign(end, lastCount);
-        PLOG(plog::verbose) << "\t\tEnd inserted " << end << ":" << lastCount << " at cn level " << cn;
-        PLOG(plog::verbose) << "\t\tSize of breakpoints at chr : " << chromosome << " and value " << cn << " : " << breakpoints[chromosome][cn].size();
+        this->breakpoints[chromosome][value].insert_or_assign(end, lastCount);
+        PLOG(plog::debug) << "\t\tEnd inserted " << end << ":" << lastCount << " at cn level " << cn;
+        PLOG(plog::debug) << "\t\tSize of breakpoints at chr : " << chromosome << " and value " << cn << " : " << this->breakpoints[chromosome][cn].size();
 
         // a count for large files to be sure that everything went well
         if ((nbLigneFile % 10000) == 0) {
