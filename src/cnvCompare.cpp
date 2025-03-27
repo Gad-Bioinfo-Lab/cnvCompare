@@ -717,7 +717,25 @@ void cnvCompare::parseVCFLineTRN(string incLine) {
   PLOG(plog::verbose) << "\ttrnAPosition : " << trnAPosition;
   PLOG(plog::verbose) << "\ttrnBulk : " << trnBulk;
 
+  // modify the second breakpoint if [ or ] detected 
+  if (trnBulk.find("[") != string::npos) {
+    vector<string> tempBS;
+    tempBS =  parseOnSep(trnBulk, "[");
+    if (tempBS.size() > 1) {
+      trnBulk = tempBS[1];
+    }
+  }
+  if (trnBulk.find("]") != string::npos) {
+    vector<string> tempBS;
+    tempBS =  parseOnSep(trnBulk, "]");
+    if (tempBS.size() > 1) {
+      trnBulk = tempBS[1];
+    }
+  }
 
+
+
+ 
   // get the end point 
   vector<string> trnBulkInfo;
   trnBulkInfo = parseOnSep(trnBulk, ":");
