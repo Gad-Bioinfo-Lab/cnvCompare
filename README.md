@@ -93,4 +93,4 @@ We are working on an automatic detection of these cases, and a correction, but i
 - Some VCF lines are skipped, why ? 
 Probably because your VCF doesn't contain the copy level value. You need it as described in the VCF 4.1+ specifications. Either you have a "VALUE" tag in the INFO field, either you have a "CN" tag in the "FORMAT" field. If you have nothing, it's not possible to guess the CN value, so your line / sample is skipped. 
 - Will you implement the same method for the translocation events ? 
-Yes, soon. 
+Yes, done. 
