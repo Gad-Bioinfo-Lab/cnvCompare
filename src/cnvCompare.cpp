@@ -574,12 +574,12 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       for (long unsigned int n = 0 ; n < GTInfo.size() ; n ++) {
         if (strcmp(GTInfo[n].c_str(), "GT") == 0) {
           GTindex = n;
-          PLOG(plog::verbose) << "GT index was found : " << GTindex; 
+          PLOG(plog::debug) << "GT index was found : " << GTindex; 
         }
         if (! valueFound) {
           if (strcmp(GTInfo[n].c_str(), "CN") == 0) {
             CNindex = n;
-            PLOG(plog::verbose) << "CN index was found : " << GTindex; 
+            PLOG(plog::debug) << "CN index was found : " << GTindex; 
           }
         }
       }
@@ -590,7 +590,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       // getting the non wild indiv 
     if (i >= 9) {
       // first checking if the GT field has been found
-      if (passGT) {
+      if (GTindex == -1) {
         i++; 
         continue;
       }
@@ -599,49 +599,68 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
         break; 
       }
 
+      // copy number value 
+      PLOG(plog::debug) << "\tComputing cn value";  
       if ((! valueFound) && (CNindex == -1)) {
-        passGT = true;
-        PLOG(plog::info) << "No copy number value found on the VCF line " << incLine << " : passing it. Please check the VCF specifications";
-        break;
+        PLOG(plog::info) << "\t\tNo copy number value found on the VCF line " << incLine;
+        PLOG(plog::info) << "\t\tPlease check the VCF specifications. Will try to infer it with GT field";
+        if (GTindex != -1) {
+          if ((temp["SVTYPE"] != "INV") && (temp["SVTYPE"] != "CNV")) {
+            string GT = parseOnSep(mot, ":")[GTindex];
+            PLOG(plog::debug) << "\t\tGT is " << GT;
+            CNValue_i = this->inferCNfromGT(GT, temp["SVTYPE"]);
+            if (CNValue_i > 5) {
+              CNValue_i = 5;
+            }
+          } 
+        } else {
+            PLOG(plog::info) << "\t\tNo GT field : passing";
+            passGT = true;
+            break;
+        }
+        
+      } else {
+        CNValue_i = string_to_int(temp["VALUE"]);
       }
+      PLOG(plog::debug) << "\tCn value is " << CNValue_i;  
+
+ 
+      // counts number of individual
+      PLOG(plog::debug) << "\tCounting individuals";  
       if (GTindex == -1) {
         PLOG(plog::info) << "No GT Found on the VCF line : counting only 1";
         nbOfConcernedIndiv = 1;
         passGT = true;
         break;
       } else {
+        PLOG(plog::info) << "GT Found on the VCF line : counting regarding GT";
         string GT = parseOnSep(mot, ":")[GTindex];
-        PLOG(plog::verbose) << "\tGT Found : " << GT;
-        if (GT != "./.") {
-          // need to determine the copy level 
-          if (temp["SVTYPE"] != "INV") {
-            if (! valueFound) {
-              CNValue_d = stod((parseOnSep(mot, ":")[CNindex]));
-              CNValue_i = floor(CNValue_d + 0.5);
-              // not interested in cnv at n=2
-              if (CNValue_i == 2) {
-                ++i; 
-                continue; 
-              }
-              if (CNValue_i > 5) {
-                CNValue_i = 5;
-              }
-              
-              counts[CNValue_i] += 1;
-            }
-          } else { // inversion
-            if (GT != "0/0") {
-              counts[6] += 1;
-            }
+        PLOG(plog::info) << "GT is " << GT;
+        if ((temp["SVTYPE"] != "INV") && (temp["SVTYPE"] != "CNV")) {   
+          CNValue_i = this->inferCNfromGT(GT, temp["SVTYPE"]);
+          // not interested in cnv at n=2
+          if (CNValue_i == 2) {
+            PLOG(plog::info) << "CN is 2 : passing";
+            ++i; 
+            passGT = true;
+            continue; 
           }
-          nbOfConcernedIndiv += 1;
-          PLOG(plog::verbose) << "\t\tadding 1 concerned individual with GT : " << GT;
+          if (CNValue_i > 5) {
+            CNValue_i = 5;
+          }
+          counts[CNValue_i] += 1;
+        } else { // inversion
+          if (GT != "0/0") {
+            counts[6] += 1;
+          }
         }
+        nbOfConcernedIndiv += 1;
+        PLOG(plog::debug) << "\t\tadding 1 concerned individual";;
       } 
-      i++; 
-      continue;
+    i++; 
+    continue;
     }
-    i++;
+  i++;
   }
 
   // add data to the vector from the temp map
@@ -719,18 +738,22 @@ void cnvCompare::parseVCFLineTRN(string incLine) {
 
   // modify the second breakpoint if [ or ] detected 
   if (trnBulk.find("[") != string::npos) {
+    PLOG(plog::debug) << "\tFound a [ in the BND second breakpoint : " << trnBulk << " at pos " << trnBulk.find("[");
     vector<string> tempBS;
     tempBS =  parseOnSep(trnBulk, "[");
     if (tempBS.size() > 1) {
       trnBulk = tempBS[1];
     }
+    PLOG(plog::debug) << "\t\tTurned into : " << trnBulk;
   }
   if (trnBulk.find("]") != string::npos) {
+    PLOG(plog::debug) << "\tFound a ] in the BND second breakpoint : " << trnBulk << " at pos : " << trnBulk.find("]");
     vector<string> tempBS;
     tempBS =  parseOnSep(trnBulk, "]");
     if (tempBS.size() > 1) {
       trnBulk = tempBS[1];
     }
+    PLOG(plog::debug) << "\t\tTurned into : " << trnBulk;
   }
 
 
@@ -835,6 +858,26 @@ int cnvCompare::getTRNAssoc(string incLine) {
       break;
     }
     ++i; 
+  }
+
+  // modify the second breakpoint if [ or ] detected 
+  if (trnBulk.find("[") != string::npos) {
+    PLOG(plog::debug) << "\tFound a [ in the BND second breakpoint : " << trnBulk << " at pos " << trnBulk.find("[");
+    vector<string> tempBS;
+    tempBS =  parseOnSep(trnBulk, "[");
+    if (tempBS.size() > 1) {
+      trnBulk = tempBS[1];
+    }
+    PLOG(plog::debug) << "\t\tTurned into : " << trnBulk;
+  }
+  if (trnBulk.find("]") != string::npos) {
+    PLOG(plog::debug) << "\tFound a ] in the BND second breakpoint : " << trnBulk << " at pos : " << trnBulk.find("]");
+    vector<string> tempBS;
+    tempBS =  parseOnSep(trnBulk, "]");
+    if (tempBS.size() > 1) {
+      trnBulk = tempBS[1];
+    }
+    PLOG(plog::debug) << "\t\tTurned into : " << trnBulk;
   }
 
   // get the end point 
@@ -1167,7 +1210,8 @@ void cnvCompare::computeCountsFast() {
     ofstream outStream;
     outStream.open(outFileName.c_str(), ios::out);
     while (getline(cnvStream, ligneCNV)) {
-      // need to deal with header "#"
+      // need todeal with header "#"
+      PLOG(plog::debug) << "### NEW LINE ###";
       if (ligneCNV.find(header) == 0) {
         if (this->getFormat() == "VCF") {
           outStream << ligneCNV << endl;
@@ -1244,13 +1288,18 @@ void cnvCompare::computeCountsFast() {
 
 
       if ((s_type != "DUP") && (s_type != "DEL") && (s_type != "INV") && (s_type != "CNV")) {
+        PLOG(plog::info) << "Found an event type not managed : " << s_type;
         outStream << ligneCNV << endl;
         continue;
       }
-
+      unsigned int value;
       long start = string_to_int(res[1]);
       long end = string_to_int(res[2]);
-      unsigned int value = string_to_int(res[4]);
+      if (res[4] == "-1") {
+        value = 2;
+      } else { 
+        value = string_to_int(res[4]);
+      }
       // roofing the value
       if (value > 5) {
         value = 5;
@@ -1263,10 +1312,24 @@ void cnvCompare::computeCountsFast() {
       PLOG(plog::debug) << "Computing counts " << chromosome << ":" << start << "-" << end << ":" << s_type << value;
       double total = 0;
       map<long, short>::iterator it; 
+      map<long, short>::iterator endIt;
       short lastValue = 0; 
       long lastPoint = 0; 
       PLOG(plog::debug) << "\toutFileName is : " << outFileName;
-      for (it = this->breakpoints[chromosome][value].find(start) ; it != next(this->breakpoints[chromosome][value].find(end), 1) ; ++it) {
+      it = this->breakpoints[chromosome][value].find(start);
+      PLOG(plog::debug) << "\titerator pointing first to : " << it->first << ":" << it->second;
+      it = this->breakpoints[chromosome][value].find(end);
+      PLOG(plog::debug) << "\titerator pointing end to : " << it->first << ":" << it->second;
+
+      // manage event on the whole chromosome 
+      if (it == this->breakpoints[chromosome][value].end()) {
+        endIt = it;
+      } else {
+        endIt = next(this->breakpoints[chromosome][value].find(end), 1);
+      }
+
+
+      for (it = this->breakpoints[chromosome][value].find(start) ; it != endIt ; ++it) {
         PLOG(plog::debug) << "\tcurrent BP is " << it->first << ":" << it->second;
         if (lastPoint != 0) {
           PLOG(plog::debug) << "\t\tadding " << ((it->first + 1) - lastPoint) * lastValue;
@@ -1281,7 +1344,12 @@ void cnvCompare::computeCountsFast() {
         }
       }
       
-      double mean = total / (double)((end-start)+1);
+      double mean;
+      if (total == 0) {
+        mean = 1.0;
+      } else {      
+        mean = total / (double)((end-start)+1);
+      }
       PLOG(plog::debug) << "\tMean = " << mean; 
 
       // need to adapt the output according to the choosen format
@@ -1428,7 +1496,7 @@ void cnvCompare::getDataFast() {
 
         // pass if not del or dup 
         if ((res[3] != "DEL") and (res[3] != "DUP") and (res[3] != "INV")) {
-          PLOG(plog::debug) << "\tPassing VCF line : not DEL nor DUP nor INV, passing line"; 
+          PLOG(plog::debug) << "\tPassing VCF line : not DEL nor DUP nor INV, passing line : " << res[3]; 
           continue;
         }
         
@@ -1701,7 +1769,7 @@ string cnvCompare::getFormat() {
  **/
 int cnvCompare::populateChr() {
   PLOG(plog::verbose) << "Entering cnvCompare::populateChr ";
-  this->chromosomeMap.insert(this->chromosomeMap.end(), {"chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrX", "chrY"});
+  this->chromosomeMap.insert(this->chromosomeMap.end(), {"chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7", "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17", "chr18", "chr19", "chr20", "chr21", "chr22", "chrX", "chrY", "chrM"});
   PLOG(plog::verbose) << "Leaving cnvCompare::populateChr ";
   return 0; 
 }
@@ -1962,4 +2030,44 @@ int cnvCompare::getNextIndex() {
   PLOG(plog::verbose) << "Entering cnvCompare::setTRNIndex";
   this->nextIndex = incValue;
   PLOG(plog::verbose) << "Leaving cnvCompare::setNextIndex";
+}
+
+/**
+ * @brief Method used to infer copy number with a GT field
+ * @param String the GT Field
+ * @return Int the value of the copynumber 
+ **/
+int cnvCompare::inferCNfromGT(string GT, string svType) {
+  PLOG(plog::verbose) << "Entering cnvCompare::inferCNfromGT";
+
+  if ((GT == "./.") || (GT == ".")){
+    PLOG(plog::debug) << "GT field is ./. : CN = 2";
+    return 2;
+  }
+  
+  int al1 = string_to_int(parseOnSep(GT, "/")[0]);
+  int al2 = string_to_int(parseOnSep(GT, "/")[1]);
+  PLOG(plog::debug ) << "Al 1 = " << al1 << " ; Al 2 = " << al2;
+  if ((al1 == 0) && (al2 == 0)) {
+    return 2;
+  }
+
+  if (svType == "DEL") {
+    if (al1 != al2) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+  if (svType == "DUP") {
+    if (al1 != al2) {
+      return 3;
+    } else {
+      return 4;
+    }
+  }
+
+  
+  PLOG(plog::verbose) << "Leaving cnvCompare::inferCNfromGT";
+  return 2;
 }
