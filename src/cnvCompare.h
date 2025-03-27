@@ -45,6 +45,7 @@ class cnvCompare
 		int getTRNIndex(std::string, unsigned int);
 		int getNextIndex(); 
 		void setNextIndex(int);
+		int inferCNfromGT(std::string, std::string);
 
 	private:
 		std::string inputFile;
