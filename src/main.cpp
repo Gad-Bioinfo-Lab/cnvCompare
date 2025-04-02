@@ -88,14 +88,9 @@ int main(int argc, char* argv[]) {
 	("vcf", "VCF mode : input files are in VCF format according to vcf specification v4.7 (default)")
 	("bed", "BED mode : input files are in bed format + fields for cnv level and quality scores");
 
-
-	
-
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 	po::notify(vm);
-
-
 
 	// deal with basic options 
 	if( argc <= 1 )
@@ -111,11 +106,9 @@ int main(int argc, char* argv[]) {
 	if (vm.count("debug")) {
 		debugMode = true;
 		cerr << "Debug mode activated" << "\n";
-		return 0;
 	}
 	init_logging(debugMode);
 	PLOG(plog::info) << "Starting Main (plog)";
-
 
 	if (vm.count("version")) {
 		cerr << "cnvCompare : comparing and counting CNV/SV detected by sequencing experiments" << endl; 
