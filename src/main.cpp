@@ -35,8 +35,8 @@ namespace po = boost::program_options;
 
 
 // logging initiation function 
-void init_logging(bool debugMode) {
-	plog::init(plog::info, "cnvCompare.log");
+void init_logging(bool debugMode, string logFile) {
+	plog::init(plog::info, logFile.c_str());
 	if (debugMode) {
 		plog::get()->setMaxSeverity(plog::debug);
 	}
@@ -68,6 +68,7 @@ int main(int argc, char* argv[]) {
 	int filterSize = 0;
 	string inputFile;
 	string inputControlFile;
+	string inputLogFile = "cnvCompare.log";
 	string logFile;
 	string dictFile; 
 	string suffix;
@@ -79,6 +80,7 @@ int main(int argc, char* argv[]) {
 	("version,v", "Print version and exit")
 	("input,i",  po::value<string>( &inputFile ), "List of input file(s) containing detected CNV from samples")
 	("control,c",  po::value<string>( &inputControlFile ), "List of input file(s) containing detected CNV from control")
+	("logfile,l", po::value<string>( &inputLogFile ), "Log file to use. (cnvCompare.log)")
 	("filter,f", po::value<int>( &filterSize ), "Minimum size for a CNV to be counted (0)")
 	("chrom,x", "Chromosome mode. Legacy mode in case of issue with the fast mode")
 	("debug,g", "Debug mode. A lot more verbose")
@@ -107,7 +109,7 @@ int main(int argc, char* argv[]) {
 		debugMode = true;
 		cerr << "Debug mode activated" << "\n";
 	}
-	init_logging(debugMode);
+	init_logging(debugMode, inputLogFile);
 	PLOG(plog::info) << "Starting Main (plog)";
 
 	if (vm.count("version")) {
