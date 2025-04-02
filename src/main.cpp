@@ -35,9 +35,11 @@ namespace po = boost::program_options;
 
 
 // logging initiation function 
-void init_logging() {
+void init_logging(bool debugMode) {
 	plog::init(plog::info, "cnvCompare.log");
-	// plog::get()->setMaxSeverity(plog::debug);
+	if (debugMode) {
+		plog::get()->setMaxSeverity(plog::debug);
+	}
 }
 
 // signal handler to leave properly if seg fault, or interruption. 
@@ -57,12 +59,12 @@ int main(int argc, char* argv[]) {
 	signal(SIGSEGV | SIGINT | SIGTERM | SIGABRT | SIGFPE, handler);
 
 	// logging start
-	init_logging();
-	PLOG(plog::info) << "Starting Main (plog)";
+	
 
 	// decla
 	bool useVCFFormat = true; 
 	bool useBEDFormat = false;
+	bool debugMode = false;
 	int filterSize = 0;
 	string inputFile;
 	string inputControlFile;
@@ -79,11 +81,16 @@ int main(int argc, char* argv[]) {
 	("control,c",  po::value<string>( &inputControlFile ), "List of input file(s) containing detected CNV from control")
 	("filter,f", po::value<int>( &filterSize ), "Minimum size for a CNV to be counted (0)")
 	("chrom,x", "Chromosome mode. Legacy mode in case of issue with the fast mode")
+	("debug,g", "Debug mode. A lot more verbose")
 	("fast,q", "Fast mode. (default)")
 	("dict,d", po::value<string>( &dictFile ), "Dictionnary used to populate the chromosome list")
 	("suffix,s", po::value<string>( &suffix ), "Suffix to use for the output files (default : count")
 	("vcf", "VCF mode : input files are in VCF format according to vcf specification v4.7 (default)")
 	("bed", "BED mode : input files are in bed format + fields for cnv level and quality scores");
+
+
+	init_logging(debugMode);
+	PLOG(plog::info) << "Starting Main (plog)";
 
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
