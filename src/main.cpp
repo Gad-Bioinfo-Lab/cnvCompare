@@ -89,12 +89,13 @@ int main(int argc, char* argv[]) {
 	("bed", "BED mode : input files are in bed format + fields for cnv level and quality scores");
 
 
-	init_logging(debugMode);
-	PLOG(plog::info) << "Starting Main (plog)";
+	
 
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 	po::notify(vm);
+
+
 
 	// deal with basic options 
 	if( argc <= 1 )
@@ -107,6 +108,15 @@ int main(int argc, char* argv[]) {
 		cerr << desc << "\n";
 		return 0;
 	}
+	if (vm.count("debug")) {
+		debugMode = true;
+		cerr << "Debug mode activated" << "\n";
+		return 0;
+	}
+	init_logging(debugMode);
+	PLOG(plog::info) << "Starting Main (plog)";
+
+
 	if (vm.count("version")) {
 		cerr << "cnvCompare : comparing and counting CNV/SV detected by sequencing experiments" << endl; 
 		cerr << "Version 1.7.0" << endl; 
