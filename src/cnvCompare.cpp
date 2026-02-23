@@ -2040,13 +2040,27 @@ int cnvCompare::getNextIndex() {
 int cnvCompare::inferCNfromGT(string GT, string svType) {
   PLOG(plog::verbose) << "Entering cnvCompare::inferCNfromGT";
 
+  int al1 = 0; 
+  int al2 = 0; 
+
   if ((GT == "./.") || (GT == ".")){
     PLOG(plog::debug) << "GT field is ./. : CN = 2";
     return 2;
   }
-  
-  int al1 = string_to_int(parseOnSep(GT, "/")[0]);
-  int al2 = string_to_int(parseOnSep(GT, "/")[1]);
+  if (GT.find("/") != string::npos) {
+    PLOG(plog::debug) << "GT field separator is /";
+    int al1 = string_to_int(parseOnSep(GT, "/")[0]);
+    int al2 = string_to_int(parseOnSep(GT, "/")[1]);
+  } else if (GT.find("|") != string::npos) {
+    PLOG(plog::debug) << "GT field separator is |";
+    int al1 = string_to_int(parseOnSep(GT, "|")[0]);
+    int al2 = string_to_int(parseOnSep(GT, "|")[1]);
+  } else {
+    PLOG(plog::debug) << "GT field separator not found (/ or |) : CN = 2";
+    return 2;
+  }
+
+
   PLOG(plog::debug ) << "Al 1 = " << al1 << " ; Al 2 = " << al2;
   if ((al1 == 0) && (al2 == 0)) {
     return 2;
