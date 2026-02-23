@@ -556,6 +556,9 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       while (getline(issInfo, infomot, ';')) {
         if (infomot.find("SVTYPE=") == 0) {
           temp["SVTYPE"] = parseOnSep(infomot, "=")[1];
+          if (temp["SVTYPE"] == "INS") {
+            temp["SVTYPE"] = "DUP";
+          }
         }
         if (infomot.find("END=") == 0) {
           temp["END"] = parseOnSep(infomot, "=")[1];
