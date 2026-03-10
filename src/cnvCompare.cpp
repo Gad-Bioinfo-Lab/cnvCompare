@@ -1220,8 +1220,7 @@ void cnvCompare::computeCountsFast() {
           if (ligneCNV.find_last_of(header) == 1){
             outStream << ligneCNV << endl;
           } else {
-            outStream << "##INFO=<ID=COUNT,Number=.,Type=String,Description=\"Number of occurrence of the event/number of sample in the counting batch\">
-" << endl;
+            outStream << "##INFO=<ID=COUNT,Number=.,Type=String,Description=\"Number of occurrence of the event/number of sample in the counting batch\">" << endl;
             outStream << ligneCNV << endl;
           }
         }
