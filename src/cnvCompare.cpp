@@ -526,7 +526,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
   short CNindex = -1;
   short int i = 0;
   double CNValue_d = 0.0; 
-  int CNValue_i = 0;
+  int CNValue_i = -1;
   bool valueFound = false; 
   bool passGT = false;
   int nbOfConcernedIndiv = 0;
@@ -613,6 +613,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       } else {
         // try INFO 
         if (valueFound) {
+          PLOG(plog::debug) << "\t\tA CN/VALUE INFO field was found on this line : " << temp["VALUE"]; 
           string infoCN = "";
           infoCN = temp["VALUE"];
 
@@ -630,8 +631,9 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
 
         // try FORMAT if no success with INFO
         if (CNValue_i == -1) {
-          PLOG(plog::debug) << "\t\tNo copy number value found on the VCF INFO field on this line";
+          PLOG(plog::debug) << "\t\tNo real copy number value found on the VCF INFO field on this line";
           string formatCN = parseOnSep(mot, ":")[CNindex];
+          PLOG(plog::debug) << "\t\tA CN FORMAT field was found on this line : " << formatCN;
           if ((strcmp(formatCN.c_str(), ".") == 0)) {
             CNValue_i = -1;
           } else {
@@ -723,7 +725,6 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
   for (myIter = output.begin() ; myIter != output.end() ; myIter++ ) {
     PLOG(plog::debug) << "\t\t" << *myIter << endl; 
   }
-  PLOG(plog::debug) << "\n";
 
   PLOG(plog::verbose) << "Leaving cnvCompare::parseVCFLine ";
   return output;
