@@ -1317,7 +1317,7 @@ void cnvCompare::computeCountsFast() {
       }
 
       // counts
-      PLOG(plog::debug) << "Computing counts " << chromosome << ":" << start << "-" << end << ":" << s_type << value;
+      PLOG(plog::debug) << "Computing counts " << chromosome << ":" << start << "-" << end << ":" << s_type << ":" << value;
       double total = 0;
       map<long, short>::iterator it; 
       map<long, short>::iterator endIt;
