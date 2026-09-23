@@ -603,10 +603,50 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
       }
 
       // copy number value 
-      PLOG(plog::debug) << "\tComputing cn value";  
+      bool doItWithGenotype = false;
+
+      PLOG(plog::debug) << "\tComputing CN value";  
       if ((! valueFound) && (CNindex == -1)) {
-        PLOG(plog::info) << "\t\tNo copy number value found on the VCF line " << incLine;
+        PLOG(plog::info) << "\t\tNo copy number value found on the VCF line (INFO or FORMAT) " << incLine;
         PLOG(plog::info) << "\t\tPlease check the VCF specifications. Will try to infer it with GT field";
+        doItWithGenotype = true;
+      } else {
+        // try INFO 
+        if (valueFound) {
+          string infoCN = "";
+          infoCN = temp["VALUE"];
+
+          // need to check if empty 
+          if (infoCN.empty()) {
+            CNValue_i = -1;
+          } else {
+            if ((strcmp(infoCN.c_str(), ".") == 0)) {
+              CNValue_i = -1;
+            } else {
+              CNValue_i = string_to_int(infoCN);
+            }
+          } 
+        }
+
+        // try FORMAT if no success with INFO
+        if (CNValue_i == -1) {
+          PLOG(plog::debug) << "\t\tNo copy number value found on the VCF INFO field on this line";
+          string formatCN = parseOnSep(mot, ":")[CNindex];
+          if ((strcmp(formatCN.c_str(), ".") == 0)) {
+            CNValue_i = -1;
+          } else {
+            CNValue_i = string_to_int(formatCN);
+          }
+        }
+
+        if (CNValue_i == -1) {
+          PLOG(plog::info) << "\t\tNo copy number value found on the VCF line (INFO or FORMAT) " << incLine;
+          PLOG(plog::info) << "\t\tPlease check the VCF specifications. Will try to infer it with GT field";
+          doItWithGenotype = true;
+        } 
+      }
+
+      if (doItWithGenotype ) {
         if (GTindex != -1) {
           if ((temp["SVTYPE"] != "INV") && (temp["SVTYPE"] != "CNV")) {
             string GT = parseOnSep(mot, ":")[GTindex];
@@ -621,10 +661,9 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
             passGT = true;
             break;
         }
-        
-      } else {
-        CNValue_i = string_to_int(temp["VALUE"]);
       }
+
+
       PLOG(plog::debug) << "\tCn value is " << CNValue_i;  
 
  
