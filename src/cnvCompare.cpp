@@ -582,7 +582,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
         if (! valueFound) {
           if (strcmp(GTInfo[n].c_str(), "CN") == 0) {
             CNindex = n;
-            PLOG(plog::debug) << "CN index was found : " << GTindex; 
+            PLOG(plog::debug) << "CN index was found : " << CNindex; 
           }
         }
       }
@@ -1317,7 +1317,7 @@ void cnvCompare::computeCountsFast() {
       }
 
       // counts
-      PLOG(plog::debug) << "Computing counts " << chromosome << ":" << start << "-" << end << ":" << s_type << ":" << value;
+      PLOG(plog::debug) << "Computing counts " << chromosome << ":" << start << "-" << end << ":" << s_type << " ; CNVALUE:" << value;
       double total = 0;
       map<long, short>::iterator it; 
       map<long, short>::iterator endIt;
