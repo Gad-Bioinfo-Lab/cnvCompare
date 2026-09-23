@@ -21,7 +21,7 @@ apt update -y
 mkdir /opt/cnvCompare
 
 # system libs
-apt install -y build-essential gcc-11 gcc-11-locales gcc-11-multilib cmake gdb g++
+apt install -y build-essential gcc gcc-multilib cmake gdb g++
 apt install -y git-all libboost-dev libboost-all-dev
 
 
