@@ -65,6 +65,7 @@ int main(int argc, char* argv[]) {
 	bool useVCFFormat = true; 
 	bool useBEDFormat = false;
 	bool debugMode = false;
+	bool traceMode = false;
 	int filterSize = 0;
 	string inputFile;
 	string inputControlFile;
@@ -84,6 +85,7 @@ int main(int argc, char* argv[]) {
 	("filter,f", po::value<int>( &filterSize ), "Minimum size for a CNV to be counted (0)")
 	("chrom,x", "Chromosome mode. Legacy mode in case of issue with the fast mode")
 	("debug,g", "Debug mode. A lot more verbose")
+	("trace,t", "Trace mode. A lot more verbose (more than you think)")
 	("fast,q", "Fast mode. (default)")
 	("dict,d", po::value<string>( &dictFile ), "Dictionnary used to populate the chromosome list")
 	("suffix,s", po::value<string>( &suffix ), "Suffix to use for the output files (default : count")
@@ -114,7 +116,7 @@ int main(int argc, char* argv[]) {
 
 	if (vm.count("version")) {
 		cerr << "cnvCompare : comparing and counting CNV/SV detected by sequencing experiments" << endl; 
-		cerr << "Version 1.7.0" << endl; 
+		cerr << "Version 1.7.1" << endl; 
 		cerr << "WARNING : do not use in diagnostics, results are not guaranteed" << endl;
 		cerr << "Author : <yannis.duffourd@u-bourgogne.fr> - INSERM U1231 GAD - CHU Dijon" << endl; 
 		cerr << "Copyright (c) 2022 GAD Lab under the aGPL v3 License" << endl;
