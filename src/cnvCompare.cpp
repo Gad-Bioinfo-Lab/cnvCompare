@@ -1451,6 +1451,7 @@ void cnvCompare::computeCountsFast() {
               outStream << infomot << ";";
             }
             outStream << "END=" << ciend << ";VALUE=" << value << ";SVTYPE=";
+            
             if (value == ".") {
               value = "6";
             }
@@ -1464,6 +1465,7 @@ void cnvCompare::computeCountsFast() {
                 }
             }
             outStream << "COUNT=" << floor(mean) << "/" << this->getNbIndividual();
+            PLOG(plog::info) << "Counts are : " << value << "\t" << floor(mean) << "/" << this->getNbIndividual();
             break;
           default:
             outStream << "\t" << mot;
