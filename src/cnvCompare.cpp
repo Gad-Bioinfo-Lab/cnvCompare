@@ -1412,6 +1412,7 @@ void cnvCompare::computeCountsFast() {
           }
         }
         outStream << value << "\t" << mean << "/" << this->getNbIndividual() << endl;
+        PLOG(plog::info) << "Counts are : " << value << "\t" << mean << "/" << this->getNbIndividual();
       } else {
         // output VCF
         res = this->parseVCFLine(ligneCNV);
