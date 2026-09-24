@@ -712,7 +712,7 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
   output.push_back(temp["END"]);
   output.push_back(temp["SVTYPE"]);
 
-  output.push_back(CNValue_i);
+  output.push_back(int_to_string(CNValue_i));
   output.push_back(int_to_string(nbOfConcernedIndiv));
   PLOG(plog::debug) << "\tNumber of concerned individual is " << nbOfConcernedIndiv;
   // transforming the counts vector into string 
