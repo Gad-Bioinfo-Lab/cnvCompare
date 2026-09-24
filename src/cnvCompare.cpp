@@ -642,13 +642,14 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
         }
 
         if (CNValue_i == -1) {
-          PLOG(plog::info) << "\t\tNo copy number value found on the VCF line (INFO or FORMAT) " << incLine;
+          PLOG(plog::info) << "\t\tNo copy number value found on the VCF line (INFO or FORMAT) ";
           PLOG(plog::info) << "\t\tPlease check the VCF specifications. Will try to infer it with GT field";
           doItWithGenotype = true;
         } 
       }
 
       if (doItWithGenotype ) {
+        PLOG(plog::info) << "\tInfer CN with GT field";
         if (GTindex != -1) {
           if ((temp["SVTYPE"] != "INV") && (temp["SVTYPE"] != "CNV")) {
             string GT = parseOnSep(mot, ":")[GTindex];
@@ -710,10 +711,8 @@ vector<string> cnvCompare::parseVCFLine(string incLine) {
   // add data to the vector from the temp map
   output.push_back(temp["END"]);
   output.push_back(temp["SVTYPE"]);
-  if (! valueFound) {
-    temp["VALUE"] = "-1";
-  }
-  output.push_back(temp["VALUE"]);
+
+  output.push_back(CNValue_i);
   output.push_back(int_to_string(nbOfConcernedIndiv));
   PLOG(plog::debug) << "\tNumber of concerned individual is " << nbOfConcernedIndiv;
   // transforming the counts vector into string 
