@@ -1617,7 +1617,7 @@ void cnvCompare::getDataFast() {
         // if the map is empty do not try to browse it, just insert the start and end values and treat the next line. 
         if (this->breakpoints[chromosome][cn].empty()) {
           PLOG(plog::debug) << "\t\t\tMap was empty : so just inserting start & end";
-          this->breakpoints[chromosome][cn][start] = 1;
+          this->breakpoints[chromosome][cn][start] = count;
           this->breakpoints[chromosome][cn][end] = 0;
           continue; 
         }
