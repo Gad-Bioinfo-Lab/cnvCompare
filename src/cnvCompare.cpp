@@ -16,7 +16,9 @@
 #include <unordered_map>
 #include <filesystem>
 #include <cmath>
+#include <cstring>
 #include <limits>
+#include <set>
 //#include <ranges>
 
 // Boost 
@@ -1270,7 +1272,22 @@ void cnvCompare::computeCountsFast() {
       if (this->getFormat() == "BED") {
         res = this->parseBEDLine(ligneCNV);
       } else  {
-        res = this->parseVCFLine(ligneCNV);
+        auto columns = parseOnSep(ligneCNV, "\t");
+        if (columns.size() >= 8) {
+          string endField, svtype, cnField;
+          for (const auto &field : parseOnSep(columns[7], ";")) {
+            if (field.find("END=") == 0) endField = field.substr(4);
+            if (field.find("SVTYPE=") == 0) svtype = field.substr(7);
+            if (field.find("CN=") == 0) cnField = field.substr(3);
+            if (field.find("VALUE=") == 0 && cnField.empty()) cnField = field.substr(6);
+          }
+          res = {columns[0], columns[1], endField.empty() ? columns[1] : endField,
+                 svtype, cnField};
+        }
+      }
+      if (res.size() < 5) {
+        outStream << ligneCNV << endl;
+        continue;
       }
 
       // type conversion
@@ -1335,7 +1352,7 @@ void cnvCompare::computeCountsFast() {
       }
 
 
-      if ((s_type != "DUP") && (s_type != "DEL") && (s_type != "INV") && (s_type != "CNV")) {
+      if ((s_type != "DUP") && (s_type != "DEL") && (s_type != "INV") && (s_type != "INS") && (s_type != "CNV")) {
         PLOG(plog::info) << "Found an event type not managed : " << s_type;
         outStream << ligneCNV << endl;
         continue;
@@ -1343,10 +1360,29 @@ void cnvCompare::computeCountsFast() {
       unsigned int value;
       long start = string_to_int(res[1]);
       long end = string_to_int(res[2]);
-      if (res[4] == "-1") {
+      if (res[4].empty() || res[4] == "." || res[4] == "-1") {
         value = 2;
       } else { 
         value = string_to_int(res[4]);
+      }
+      // With missing INFO/CN, use the first non-reference sample's genotype.
+      if (value == 2 && (s_type == "DEL" || s_type == "DUP") && this->getFormat() == "VCF") {
+        auto columns = parseOnSep(ligneCNV, "\t");
+        if (columns.size() > 9) {
+          auto format = parseOnSep(columns[8], ":");
+          auto gtIndex = find(format.begin(), format.end(), "GT");
+          if (gtIndex != format.end()) {
+            const size_t idx = distance(format.begin(), gtIndex);
+            for (size_t sample = 9; sample < columns.size(); ++sample) {
+              auto call = parseOnSep(columns[sample], ":");
+              if (idx < call.size() && call[idx] != "0/0" && call[idx] != "0|0"
+                  && call[idx] != "./." && call[idx] != ".|.") {
+                value = this->inferCNfromGT(call[idx], s_type);
+                break;
+              }
+            }
+          }
+        }
       }
       // roofing the value
       if (value > 5) {
@@ -1354,6 +1390,10 @@ void cnvCompare::computeCountsFast() {
       }
       if (s_type == "INV") {
         value = 6;
+      }
+      if (s_type == "INS") {
+        value = 7;
+        end = start; // Insertions are anchored at POS, not over SVLEN bases.
       }
 
       // counts
@@ -1397,7 +1437,6 @@ void cnvCompare::computeCountsFast() {
         PLOG(plog::info) << "Counts are : " << value << "\t" << mean << "/" << this->getNbIndividual();
       } else {
         // output VCF
-        res = this->parseVCFLine(ligneCNV);
         istringstream issLigne(ligneCNV);
         istringstream issInfo;
         string mot;
@@ -1434,18 +1473,7 @@ void cnvCompare::computeCountsFast() {
             }
             outStream << "END=" << ciend << ";VALUE=" << value << ";SVTYPE=";
             
-            if (value == ".") {
-              value = "6";
-            }
-            if (string_to_int(value) == 6) {
-              outStream << "INV;";
-            } else { 
-              if (string_to_int(value) > 2) {
-                  outStream << "DUP;";
-                } else {
-                  outStream << "DEL;";
-                }
-            }
+            outStream << svtype << ";";
             outStream << "COUNT=" << floor(mean) << "/" << this->getNbIndividual();
             PLOG(plog::info) << "Counts are : " << value << "\t" << floor(mean) << "/" << this->getNbIndividual();
             break;
@@ -1470,136 +1498,127 @@ void cnvCompare::computeCountsFast() {
  * @return none
  **/
 void cnvCompare::getDataFast() {
-  PLOG(plog::verbose) << "Entering cnvCompare::getDataFast ";
-  PLOG(plog::info) << "Gathering data";
-  // struct timeval tbegin, tend;
-  string ligne;
-  string ligneCNV;
-  string mot;
-  string header = "#";
-  string currentChr;
-  string chromosome;
-  string s_type;
-  string s_start;
-  string s_end;
-  string s_value;
-  vector <short> levelValues(7, 0);
-  
-
-  // tsv parsing
-  map<string, string>::iterator myIterA;
-  for (myIterA = this->fileMap.begin(); myIterA != this->fileMap.end(); myIterA++) {
-    ligne = myIterA->first;
-    ifstream cnvStream(ligne.c_str());
-    PLOG(plog::info) << "\tReading file " << ligne << "\t";
-    this->nbFile++;
-    long nbLigneFile = 0;
-    short nbOfConcernedIndividual = 0;
-    PLOG(plog::debug) << "### size of trnAssociation : " << this->trnAssociation.size(); 
-    while (getline(cnvStream, ligneCNV)) {
-      PLOG(plog::debug) << "### NEW LINE ###";
-      // need to deal with header "#"
-      if (ligneCNV.find(header) == 0) {
-        this->watchHeader(ligneCNV);
-        continue;
-      }
-      nbLigneFile++;
-      vector<string> res;
-      if (this->getFormat() == "BED") {
-        res = this->parseBEDLine(ligneCNV);
-      } else {
-        res = this->parseVCFLine(ligneCNV);
-
-        // check if the vcf parsing was ok
-        if (res.size() == 0) {
-          PLOG(plog::error) << "\tParsing VCF line : " << ligneCNV << " failed, passing line"; 
-          continue; 
-        }
-
-        // TRN count
-        if ((res[3] == "TRN") || (res[3] == "BND")) {
-          PLOG(plog::debug) << "\tEncountering a TRN"; 
-          if (this->getFormat() == "VCF"){
-            this->parseVCFLineTRN(ligneCNV);
-          }
-          continue;
-        }
-
-
-        // pass if not del or dup 
-        if ((res[3] != "DEL") and (res[3] != "DUP") and (res[3] != "INV")) {
-          PLOG(plog::debug) << "\tPassing VCF line : not DEL nor DUP nor INV, passing line : " << res[3]; 
-          continue;
-        }
-        
-        nbOfConcernedIndividual = string_to_int(res[5]);
-      }
-
-      // type conversion
-      chromosome = res[0];
-      s_type = res[3];
-      long start = string_to_int(res[1]);
-      long end = string_to_int(res[2]);
-      
-
-      // size filter
-      if ((end - start) < this->getFilterSize()) {
-        continue;
-      }
-
-      // value management
-      int value = string_to_int(res[4]);
-      if (value > 5) {
-        value = 5;
-      }
-      if (res[4] == ".") {
-        value = 6;
-      }
-
-      PLOG(plog::verbose) << "\tCnv single value for this CNV is " << value;
-      
-      auto parsedCounts = parseOnSep(res[6], ",");
-      if (parsedCounts.size() != levelValues.size()) {
-        PLOG(plog::error) << "Invalid CN counts: " << res[6];
-        continue;
-      }
-      for (size_t cn = 0; cn < levelValues.size(); ++cn) {
-        levelValues[cn] = string_to_int(parsedCounts[cn]);
-      }
-
-
-      for (int cn = 0 ; cn <= 6 ; cn ++) {
-        int count = 0; 
-        PLOG(plog::debug) << "\tCnv values for this CNV ; cn = " <<  cn  << ", counts = " << levelValues[cn];
-        count = levelValues[cn]; 
-        if (count == 0) {
-          PLOG(plog::debug) << "\t\tnothing to insert";
-          continue; 
-        }
-        
-        PLOG(plog::debug) << "\t\twill insert : " << chromosome << ":" << start << "-" << end << " ; cnv : " << cn;
-        
-        if (end < start || end == numeric_limits<long>::max()) {
-          PLOG(plog::error) << "Invalid CNV interval: " << chromosome << ":" << start << "-" << end;
-          continue;
-        }
-        auto &deltas = this->breakpoints[chromosome][cn];
-        // Inclusive interval [start, end]: add at start, remove after end.
-        deltas[start] += count;
-        deltas[end + 1] -= count;
-
-        // a count for large files to be sure that everything went well
-        if ((nbLigneFile % 10000) == 0) {
-          PLOG(plog::info) << "\t" << nbLigneFile << " events detected, still in progress";
-        }
+  PLOG(plog::info) << "Gathering data per sample";
+  // One interval set per sample and category. The sample name is shared across
+  // input files, so a repeated sample is counted only once.
+  using Interval = pair<long, long>;
+  map<string, map<string, map<unsigned int, vector<Interval>>>> perSample;
+  set<string> individuals;
+  auto fields = [](const string &line, char separator) {
+    vector<string> result;
+    istringstream in(line);
+    string field;
+    while (getline(in, field, separator)) result.push_back(field);
+    return result;
+  };
+  auto infoValue = [&](const string &info, const string &name) {
+    for (const auto &field : fields(info, ';')) {
+      if (field.compare(0, name.size() + 1, name + "=") == 0)
+        return field.substr(name.size() + 1);
+    }
+    return string();
+  };
+  auto nonReference = [](const string &gt) {
+    if (gt.empty() || gt == "." || gt == "./." || gt == ".|.") return false;
+    istringstream alleles(gt);
+    string allele;
+    while (getline(alleles, allele, '/')) {
+      istringstream phased(allele);
+      string part;
+      while (getline(phased, part, '|')) {
+        if (part != "0" && part != "." && !part.empty()) return true;
       }
     }
-    PLOG(plog::info) << " with " << nbLigneFile << " events detected ";
+    return false;
+  };
+  for (const auto &entry : this->fileMap) {
+    ifstream input(entry.first);
+    if (!input) {
+      PLOG(plog::error) << "Cannot read " << entry.first;
+      continue;
+    }
+    vector<string> samples;
+    string line;
+    while (getline(input, line)) {
+      if (line.compare(0, 6, "#CHROM") == 0) {
+        auto header = fields(line, '\t');
+        samples.assign(header.size() > 9 ? header.begin() + 9 : header.end(), header.end());
+        for (const auto &sample : samples) individuals.insert(sample);
+        continue;
+      }
+      if (line.empty() || line[0] == '#') continue;
+      auto row = fields(line, '\t');
+      if (row.size() < 9) continue;
+      const string type = infoValue(row[7], "SVTYPE");
+      if (type == "TRN" || type == "BND") {
+        if (this->getFormat() == "VCF") this->parseVCFLineTRN(line);
+        continue;
+      }
+      if (type != "DEL" && type != "DUP" && type != "INV" && type != "INS") continue;
+      const long start = stol(row[1]);
+      const string endField = infoValue(row[7], "END");
+      const long end = type == "INS" ? start : (endField.empty() ? start : stol(endField));
+      if (end < start || end == numeric_limits<long>::max()) continue;
+      if (type != "INS" && end - start < this->getFilterSize()) continue;
+      auto format = fields(row[8], ':');
+      auto gtIt = find(format.begin(), format.end(), "GT");
+      if (gtIt == format.end()) continue;
+      const size_t gtIndex = distance(format.begin(), gtIt);
+      auto cnIt = find(format.begin(), format.end(), "CN");
+      const size_t cnIndex = cnIt == format.end() ? format.size() : distance(format.begin(), cnIt);
+      for (size_t i = 9; i < row.size() && i - 9 < samples.size(); ++i) {
+        auto sampleFields = fields(row[i], ':');
+        if (gtIndex >= sampleFields.size()) continue;
+        const string &gt = sampleFields[gtIndex];
+        if (!nonReference(gt)) continue;
+        unsigned int category;
+        if (type == "INV") category = 6;
+        else if (type == "INS") category = 7;
+        else {
+          int cn = -1;
+          if (cnIndex < sampleFields.size() && sampleFields[cnIndex] != "."
+              && !sampleFields[cnIndex].empty()) cn = stoi(sampleFields[cnIndex]);
+          if (cn < 0) {
+            const string infoCN = infoValue(row[7], "CN");
+            if (!infoCN.empty() && infoCN != ".") cn = stoi(infoCN);
+          }
+          if (cn < 0) cn = this->inferCNfromGT(gt, type);
+          if (cn == 2) continue;
+          category = static_cast<unsigned int>(min(cn, 5));
+        }
+        perSample[samples[i - 9]][row[0]][category].emplace_back(start, end);
+      }
+    }
   }
-  PLOG(plog::info) << "Ended with " << this->getNbFile() << " files";
-  PLOG(plog::verbose) << "Leaving cnvCompare::getDataFast ";
+  this->nbIndividual = static_cast<short>(individuals.size());
+  for (auto &sample : perSample) {
+    for (auto &chromosome : sample.second) {
+      for (auto &category : chromosome.second) {
+        auto &intervals = category.second;
+        sort(intervals.begin(), intervals.end());
+        if (intervals.empty()) continue;
+        long first = intervals[0].first;
+        long last = intervals[0].second;
+        auto emit = [&]() {
+          auto &deltas = this->breakpoints[chromosome.first][category.first];
+          ++deltas[first];
+          --deltas[last + 1];
+        };
+        for (size_t i = 1; i < intervals.size(); ++i) {
+          if (intervals[i].first <= last + 1) {
+            last = max(last, intervals[i].second);
+          } else {
+            emit();
+            first = intervals[i].first;
+            last = intervals[i].second;
+          }
+        }
+        emit();
+      }
+    }
+  }
+  PLOG(plog::info) << "Counted " << individuals.size() << " distinct VCF samples";
 }
-
 
 /**
  * @brief Getter for the number of input files
