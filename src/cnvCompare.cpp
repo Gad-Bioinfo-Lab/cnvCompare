@@ -946,9 +946,6 @@ int cnvCompare::getTRNAssoc(string incLine) {
   }
   string k = int_to_string(indexA) + "_" + int_to_string(indexB);
   short res = this->trnAssociation[k];
-  if (res < 1) {
-    res = 1;
-  }
   PLOG(plog::verbose) << "Leaving cnvCompare::getTRNAssoc ";
   return res;
 }
@@ -1504,6 +1501,7 @@ void cnvCompare::getDataFast() {
   using Interval = pair<long, long>;
   map<string, map<string, map<unsigned int, vector<Interval>>>> perSample;
   set<string> individuals;
+  map<string, set<string>> trnCarriers;
   auto fields = [](const string &line, char separator) {
     vector<string> result;
     istringstream in(line);
@@ -1551,7 +1549,27 @@ void cnvCompare::getDataFast() {
       if (row.size() < 9) continue;
       const string type = infoValue(row[7], "SVTYPE");
       if (type == "TRN" || type == "BND") {
-        if (this->getFormat() == "VCF") this->parseVCFLineTRN(line);
+        // Associate nearby breakpoints, but count each sample only once.
+        const auto bracket = row[4].find_first_of("[]");
+        if (bracket == string::npos) continue;
+        const auto remoteEnd = row[4].find_first_of("[]", bracket + 1);
+        if (remoteEnd == string::npos) continue;
+        const string remote = row[4].substr(bracket + 1, remoteEnd - bracket - 1);
+        const auto colon = remote.rfind(':');
+        if (colon == string::npos) continue;
+        const int first = this->insertTrnBreakpoints(row[0], stol(row[1]));
+        const int second = this->insertTrnBreakpoints(remote.substr(0, colon), stol(remote.substr(colon + 1)));
+        const string key = int_to_string(min(first, second)) + "_" + int_to_string(max(first, second));
+        auto format = fields(row[8], ':');
+        auto gtIt = find(format.begin(), format.end(), "GT");
+        if (gtIt != format.end()) {
+          const size_t gtIndex = distance(format.begin(), gtIt);
+          for (size_t i = 9; i < row.size() && i - 9 < samples.size(); ++i) {
+            auto call = fields(row[i], ':');
+            if (gtIndex < call.size() && nonReference(call[gtIndex]))
+              trnCarriers[key].insert(samples[i - 9]);
+          }
+        }
         continue;
       }
       if (type != "DEL" && type != "DUP" && type != "INV" && type != "INS") continue;
@@ -1591,6 +1609,9 @@ void cnvCompare::getDataFast() {
     }
   }
   this->nbIndividual = static_cast<short>(individuals.size());
+  this->trnAssociation.clear();
+  for (const auto &association : trnCarriers)
+    this->trnAssociation[association.first] = static_cast<int>(association.second.size());
   for (auto &sample : perSample) {
     for (auto &chromosome : sample.second) {
       for (auto &category : chromosome.second) {
@@ -1871,73 +1892,19 @@ void cnvCompare::watchHeader(string incLine) {
  * @param incMap : A map containing the breakpoint informations
  * @return integer value : the index of the breakpoint for the future association
  **/
- int cnvCompare::insertTrnBreakpoints(string chromosome, unsigned int position) {
-  PLOG(plog::verbose) << "Entering cnvCompare::insertTrnBreakpoints ";
-  
-  // compute next index if needed 
-  unordered_map<string, map<unsigned int, int> >::iterator myIterA;
-  map<unsigned int, int>::iterator myIterB;
-  map<unsigned int, int> tmpMap;
-  int index = this->getNextIndex();
-
-  // fill empty map if chr is not existing
-  if (!(this->trnbreakpoints.count(chromosome) > 0)) {
-    PLOG(plog::info) << "\tCreating TRN breakpoint map for this chromosome " << chromosome; 
-    map<unsigned int, int> tempMap;
-    this->trnbreakpoints[chromosome] = tempMap;
+int cnvCompare::insertTrnBreakpoints(string chromosome, unsigned int position) {
+  auto &positions = this->trnbreakpoints[chromosome];
+  auto next = positions.lower_bound(position);
+  if (next != positions.end() && next->first - position <= 200) return next->second;
+  if (next != positions.begin()) {
+    auto previous = prev(next);
+    if (position - previous->first <= 200) return previous->second;
   }
-
-  // look for the start / end values
-  // if the map is empty do not try to browse it, just insert the start and end values and treat the next line. 
-  if (this->trnbreakpoints[chromosome].empty()) {
-    PLOG(plog::verbose) << "\t\t\tMap was empty : so just inserting Position ";
-    this->trnbreakpoints[chromosome][position] = index;
-    this->setNextIndex(index + 1);
-    PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
-    return index; 
-  }
-
-  // insert start and end values in the sorted map
-  map<unsigned int, int>::iterator it_beforeposition, it_afterposition;
-
-  // need to get values
-  it_beforeposition = this->trnbreakpoints[chromosome].lower_bound(position);
-  it_afterposition = this->trnbreakpoints[chromosome].upper_bound(position);
-
-
-  if (it_beforeposition != this->trnbreakpoints[chromosome].begin()) {
-    PLOG(plog::verbose) << "\tBreakpoint before position is " << it_beforeposition->first << " index :" << it_beforeposition->second;
-    if ((position >= (it_beforeposition->first - 200)) && (position <= (it_beforeposition->first + 200))) {
-      PLOG(plog::verbose) << "\t\tBreakpoint is the same";
-      PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
-      return it_beforeposition->second;
-    }
-  } else {
-    PLOG(plog::verbose) << "\tBreakpoint before position is before the current begin of the map";
-  }
-
-  if (it_afterposition != this->trnbreakpoints[chromosome].end()) {
-    PLOG(plog::verbose) << "\tBreakpoint after position is " << it_afterposition->first << " index :" << it_afterposition->second;
-    if ((position <= (it_afterposition->first + 200)) && (position >= (it_afterposition->first - 200))) {
-      PLOG(plog::verbose) << "\t\tBreakpoint is the same";
-      PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
-      return it_afterposition->second;
-    }
-  } else {
-    PLOG(plog::verbose) << "\tBreakpoint after position is after the current end of the map";
-  }
-
-
-  PLOG(plog::verbose) << "\tBreakpoint wasn't found, inserting it";
-  this->trnbreakpoints[chromosome][position] = index;
+  const int index = this->getNextIndex();
+  positions[position] = index;
   this->setNextIndex(index + 1);
-  PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
-  return index; 
-
-
-  PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
-  return 0;
- }
+  return index;
+}
 
 /**
  * @brief Method used to get an index from a position in the trn breakpoint list
@@ -1947,33 +1914,16 @@ void cnvCompare::watchHeader(string incLine) {
  * @return integer value : the index of the breakpoint
  **/
 int cnvCompare::getTRNIndex(string chromosome, unsigned int position) {
-  PLOG(plog::verbose) << "Entering cnvCompare::getTRNIndex ";
-
-  // itor to get the values 
-  map<unsigned int, int>::iterator it_beforeposition, it_afterposition;
-
-  // need to get values
-  it_beforeposition = this->trnbreakpoints[chromosome].lower_bound(position);
-  it_afterposition = this->trnbreakpoints[chromosome].upper_bound(position);
-
-  if (it_beforeposition != this->trnbreakpoints[chromosome].begin()) {
-    if ((position >= (it_beforeposition->first - 200)) && (position <= (it_beforeposition->first + 200))) {
-      PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
-      PLOG(plog::debug) << "\t\tFound (before) : " << chromosome << ":" << it_beforeposition->first << " => " << it_beforeposition->second;
-      return it_beforeposition->second;
-    }
-  } 
-
-  if (it_afterposition != this->trnbreakpoints[chromosome].end()) {
-    if ((position <= (it_afterposition->first + 200)) && (position >= (it_afterposition->first - 200))) {
-      PLOG(plog::verbose) << "Leaving cnvCompare::insertTrnBreakpoints";
-      PLOG(plog::debug) << "\t\tFound (after) : " << chromosome << ":" << it_afterposition->first << " => " << it_afterposition->second;
-      return it_afterposition->second;
-    }
+  auto chromosomeIt = this->trnbreakpoints.find(chromosome);
+  if (chromosomeIt == this->trnbreakpoints.end()) return 0;
+  const auto &positions = chromosomeIt->second;
+  auto next = positions.lower_bound(position);
+  if (next != positions.end() && next->first - position <= 200) return next->second;
+  if (next != positions.begin()) {
+    auto previous = prev(next);
+    if (position - previous->first <= 200) return previous->second;
   }
-  PLOG(plog::debug) << "\t\tBreakpoint not found in the map => 1";
-  PLOG(plog::verbose) << "Leaving cnvCompare::getTRNIndex";
-  return 1;
+  return 0;
 }
 
 /**
