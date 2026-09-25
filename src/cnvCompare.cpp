@@ -1501,7 +1501,7 @@ void cnvCompare::getDataFast() {
   string s_start;
   string s_end;
   string s_value;
-  vector <short> levelValues(6, 0); 
+  vector <short> levelValues(7, 0); 
   
 
   // tsv parsing
@@ -1585,10 +1585,7 @@ void cnvCompare::getDataFast() {
       levelValues[6] = string_to_int(parseOnSep(res[6], ",")[6]); // inversion level
 
       
-      if (value != -1) {
-        levelValues[value] = 1;
-      }
-
+  
 
       for (int cn = 0 ; cn <= 6 ; cn ++) {
         int count = 0; 
@@ -1687,7 +1684,7 @@ void cnvCompare::getDataFast() {
         }
 
         // insert the end 
-        this->breakpoints[chromosome][value].insert_or_assign(end, lastCount);
+        this->breakpoints[chromosome][cn].insert_or_assign(end, lastCount);
         PLOG(plog::debug) << "\t\tEnd inserted " << end << ":" << lastCount << " at cn level " << cn;
         PLOG(plog::debug) << "\t\tSize of breakpoints at chr : " << chromosome << " and value " << cn << " : " << this->breakpoints[chromosome][cn].size();
 
