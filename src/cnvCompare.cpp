@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <filesystem>
 #include <cmath>
+#include <limits>
 //#include <ranges>
 
 // Boost 
@@ -1358,45 +1359,26 @@ void cnvCompare::computeCountsFast() {
       // counts
       PLOG(plog::debug) << "Computing counts " << chromosome << ":" << start << "-" << end << ":" << s_type << " ; CNVALUE:" << value;
       double total = 0;
-      map<long, short>::iterator it; 
-      map<long, short>::iterator endIt;
-      short lastValue = 0; 
-      long lastPoint = 0; 
-      PLOG(plog::debug) << "\toutFileName is : " << outFileName;
-      it = this->breakpoints[chromosome][value].find(start);
-      PLOG(plog::debug) << "\titerator pointing first to : " << it->first << ":" << it->second;
-      it = this->breakpoints[chromosome][value].find(end);
-      PLOG(plog::debug) << "\titerator pointing end to : " << it->first << ":" << it->second;
-
-      // manage event on the whole chromosome 
-      if (it == this->breakpoints[chromosome][value].end()) {
-        endIt = it;
-      } else {
-        endIt = next(this->breakpoints[chromosome][value].find(end), 1);
+      // breakpoints stores changes in count at start and end + 1.
+      auto &deltas = this->breakpoints[chromosome][value];
+      long long active = 0;
+      auto it = deltas.begin();
+      for (; it != deltas.end() && it->first <= start; ++it) {
+        active += it->second;
       }
-
-
-      for (it = this->breakpoints[chromosome][value].find(start) ; it != endIt ; ++it) {
-        PLOG(plog::debug) << "\tcurrent BP is " << it->first << ":" << it->second;
-        if (lastPoint != 0) {
-          PLOG(plog::debug) << "\t\tadding " << ((it->first + 1) - lastPoint) * lastValue;
-          total += ((it->first + 1) - lastPoint) * lastValue;
-          PLOG(plog::debug) << "\t\ttotal is now " << total;
-          lastPoint = it->first;
-          lastValue = it->second; 
-        } else {
-          PLOG(plog::debug) << "\t\tNot counting it";
-          lastPoint = it->first;
-          lastValue = it->second; 
-        }
+      long position = start;
+      PLOG(plog::debug) << "\toutFileName is : " << outFileName;
+      for (; it != deltas.end() && it->first <= end; ++it) {
+        total += static_cast<double>(it->first - position) * active;
+        position = it->first;
+        active += it->second;
+      }
+      if (end >= start) {
+        total += (static_cast<double>(end) - position + 1) * active;
       }
       
       double mean;
-      if (total == 0) {
-        mean = 1.0;
-      } else {      
-        mean = total / (double)((end-start)+1);
-      }
+      mean = end >= start ? total / (static_cast<double>(end) - start + 1) : 0.0;
       PLOG(plog::debug) << "\tMean = " << mean; 
 
       // need to adapt the output according to the choosen format
@@ -1501,7 +1483,7 @@ void cnvCompare::getDataFast() {
   string s_start;
   string s_end;
   string s_value;
-  vector <short> levelValues(7, 0); 
+  vector <short> levelValues(7, 0);
   
 
   // tsv parsing
@@ -1576,16 +1558,15 @@ void cnvCompare::getDataFast() {
 
       PLOG(plog::verbose) << "\tCnv single value for this CNV is " << value;
       
-      levelValues[0] = string_to_int(parseOnSep(res[6], ",")[0]);
-      levelValues[1] = string_to_int(parseOnSep(res[6], ",")[1]);
-      levelValues[2] = string_to_int(parseOnSep(res[6], ",")[2]);
-      levelValues[3] = string_to_int(parseOnSep(res[6], ",")[3]);
-      levelValues[4] = string_to_int(parseOnSep(res[6], ",")[4]);
-      levelValues[5] = string_to_int(parseOnSep(res[6], ",")[5]);
-      levelValues[6] = string_to_int(parseOnSep(res[6], ",")[6]); // inversion level
+      auto parsedCounts = parseOnSep(res[6], ",");
+      if (parsedCounts.size() != levelValues.size()) {
+        PLOG(plog::error) << "Invalid CN counts: " << res[6];
+        continue;
+      }
+      for (size_t cn = 0; cn < levelValues.size(); ++cn) {
+        levelValues[cn] = string_to_int(parsedCounts[cn]);
+      }
 
-      
-  
 
       for (int cn = 0 ; cn <= 6 ; cn ++) {
         int count = 0; 
@@ -1598,95 +1579,14 @@ void cnvCompare::getDataFast() {
         
         PLOG(plog::debug) << "\t\twill insert : " << chromosome << ":" << start << "-" << end << " ; cnv : " << cn;
         
-        // fill empty map if chr is not existing
-        if (!(this->breakpoints.count(chromosome) > 0)) {
-          PLOG(plog::debug) << "\t\t\tCreating breakpoint map for this chromosome"; 
-          unordered_map<unsigned int, map<long, short> > tempMap;
-          this->breakpoints[chromosome] = tempMap;
-          map<long, short> tempList;
-          this->breakpoints[chromosome][0] = tempList;
-          this->breakpoints[chromosome][1] = tempList;
-          this->breakpoints[chromosome][2] = tempList;
-          this->breakpoints[chromosome][3] = tempList;
-          this->breakpoints[chromosome][4] = tempList;
-          this->breakpoints[chromosome][5] = tempList;
-          this->breakpoints[chromosome][6] = tempList; // inversion level 
+        if (end < start || end == numeric_limits<long>::max()) {
+          PLOG(plog::error) << "Invalid CNV interval: " << chromosome << ":" << start << "-" << end;
+          continue;
         }
-
-        // look for the start / end values
-        // if the map is empty do not try to browse it, just insert the start and end values and treat the next line. 
-        if (this->breakpoints[chromosome][cn].empty()) {
-          PLOG(plog::debug) << "\t\t\tMap was empty : so just inserting start & end";
-          this->breakpoints[chromosome][cn][start] = count;
-          this->breakpoints[chromosome][cn][end] = 0;
-          continue; 
-        }
-
-        // insert start and end values in the sorted map
-        short lastCount = 0;
-        map<long, short>::iterator it, inserted_it, it_beforestart, it_beforeend, it_afterstart, it_afterend;
-
-        // need to get old values
-        PLOG(plog::debug) << "Looking for breakpoint around start and end : ";
-        it_beforestart = this->breakpoints[chromosome][cn].lower_bound(start);
-        it_beforeend = this->breakpoints[chromosome][cn].lower_bound(end);
-
-        it_afterstart = this->breakpoints[chromosome][cn].upper_bound(start);
-        it_afterend = this->breakpoints[chromosome][cn].upper_bound(end);
-
-        if (it_beforestart != this->breakpoints[chromosome][cn].end()) {
-          //it_beforestart --;
-          PLOG(plog::debug) << "\t\tBreakpoint before start is " << it_beforestart->first << ":" << it_beforestart->second;
-        } else {
-          PLOG(plog::debug) << "\t\tBreakpoint before start is after the current end of the map";
-        }
-        if (it_beforeend != this->breakpoints[chromosome][cn].end()) {
-          // it_beforeend --;
-          PLOG(plog::debug) << "\t\tBreakpoint before end is " << it_beforeend->first << ":" << it_beforeend->second;
-        } else {
-          PLOG(plog::debug) << "\t\tBreakpoint before end is after the current end of the map";
-        }
-        if (it_afterstart != this->breakpoints[chromosome][cn].end()) {
-          PLOG(plog::debug) << "\t\tBreakpoint after start is " << it_afterstart->first << ":" << it_afterstart->second;
-        } else {
-          PLOG(plog::debug) << "\t\tBreakpoint after start is after the current end of the map";
-        }
-        if (it_afterend != this->breakpoints[chromosome][cn].end()) {
-          PLOG(plog::debug) << "\t\tBreakpoint after end is " << it_afterend->first << ":" << it_afterend->second;
-        } else {
-          PLOG(plog::debug) << "\t\tBreakpoint after end is after the current end of the map";
-        }
-
-        // manage begin of the map
-        if (((it_beforestart == this->breakpoints[chromosome][cn].begin()) && (start != 1)) || (it_beforestart == this->breakpoints[chromosome][cn].end())){
-          lastCount = 0;
-        } else {
-          lastCount =  it_beforestart->second;
-        }
-
-        // insert start point 
-        this->breakpoints[chromosome][cn].insert_or_assign(start, lastCount + count);
-        PLOG(plog::debug) << "\t\tStart inserted " << start << ":" << lastCount + count << " at cn level " << cn;
-
-        // get last value of the interval & manage end of the map
-        if (it_beforeend == this->breakpoints[chromosome][cn].end()) {
-          lastCount = 0;
-        } else {
-          lastCount =  it_beforeend->second;
-        }
-
-        // modify all value until end
-        for (it = it_afterstart ; it != it_afterend ; ++ it) {
-          if (it != this->breakpoints[chromosome][cn].end()) {
-            this->breakpoints[chromosome][cn][it->first] += count;
-            PLOG(plog::debug) << "\t\tChanging breakpoints " << it->first << ":" << this->breakpoints[chromosome][cn][it->first] - count << " to " << this->breakpoints[chromosome][cn][it->first] << " at cn level " << cn;
-          }
-        }
-
-        // insert the end 
-        this->breakpoints[chromosome][cn].insert_or_assign(end, lastCount);
-        PLOG(plog::debug) << "\t\tEnd inserted " << end << ":" << lastCount << " at cn level " << cn;
-        PLOG(plog::debug) << "\t\tSize of breakpoints at chr : " << chromosome << " and value " << cn << " : " << this->breakpoints[chromosome][cn].size();
+        auto &deltas = this->breakpoints[chromosome][cn];
+        // Inclusive interval [start, end]: add at start, remove after end.
+        deltas[start] += count;
+        deltas[end + 1] -= count;
 
         // a count for large files to be sure that everything went well
         if ((nbLigneFile % 10000) == 0) {
